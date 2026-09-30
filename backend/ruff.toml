@@ -1,0 +1,17 @@
+line-length = 120
+target-version = "py312"
+extend-exclude = ["**/migrations/**"]
+
+[lint]
+select = ["E", "F", "W", "I", "N"]
+
+[lint.isort]
+known-first-party = ["apps", "settings"]
+section-order = ["future", "standard-library", "third-party", "rest_framework", "django", "first-party", "local-folder"]
+
+[lint.isort.sections]
+rest_framework = ["rest_framework", "rest_framework_simplejwt", "drf_spectacular"]
+django = ["django"]
+
+[format]
+quote-style = "single"
