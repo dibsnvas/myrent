@@ -39,22 +39,11 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    """MyRent account. Logs in with email; stores only what the app needs (data minimisation)."""
-
-    class Role(models.TextChoices):
-        TENANT = 'tenant', 'I rent a home'
-        LANDLORD = 'landlord', 'I rent out a home'
+    """Tenant account. Logs in with email; stores only what the app needs (data minimisation)."""
 
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=NAME_MAX_LENGTH)
     last_name = models.CharField(max_length=NAME_MAX_LENGTH, blank=True)
-    role = models.CharField(
-        max_length=20,
-        choices=Role.choices,
-        null=True,
-        blank=True,
-        help_text='Chosen on the onboarding screen right after sign-up; empty until then.',
-    )
     consent_given_at = models.DateTimeField(
         null=True,
         blank=True,

@@ -1,17 +1,4 @@
-import {
-  Button,
-  Card,
-  Group,
-  List,
-  Modal,
-  PasswordInput,
-  SegmentedControl,
-  SimpleGrid,
-  Stack,
-  Text,
-  TextInput,
-  Title,
-} from '@mantine/core'
+import { Button, Card, Group, List, Modal, PasswordInput, SimpleGrid, Stack, Text, TextInput, Title } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { IconTrash } from '@tabler/icons-react'
 import { useState } from 'react'
@@ -48,15 +35,9 @@ function DeleteAccountModal({ onClose }) {
   )
 }
 
-const ROLE_OPTIONS = [
-  { value: 'tenant', label: 'I rent a home' },
-  { value: 'landlord', label: 'I rent out a home' },
-]
-
 export default function AccountPage() {
   const { user, setUser } = useAuth()
   const [deleting, setDeleting] = useState(false)
-  const changeRole = useSave((role) => api.patch('/auth/me/', { role }), { success: 'Saved' })
   const form = useForm({ initialValues: { first_name: user.first_name, last_name: user.last_name } })
   const save = useSave((values) => api.patch('/auth/me/', values), { success: 'Profile saved' })
 
@@ -79,23 +60,10 @@ export default function AccountPage() {
         </Card>
 
         <Card withBorder padding="lg">
-          <Title order={4} mb={4}>How you use MyRent</Title>
-          <Text size="sm" c="dimmed" mb="md">
-            Changes what you see first and the wording (landlord or tenant). Your data stays the same.
-          </Text>
-          <SegmentedControl
-            data={ROLE_OPTIONS}
-            value={user.role ?? 'tenant'}
-            disabled={changeRole.isPending}
-            onChange={(role) => changeRole.mutate(role, { onSuccess: ({ data }) => setUser(data) })}
-          />
-        </Card>
-
-        <Card withBorder padding="lg">
           <Title order={4} mb="sm">What MyRent stores</Title>
           <List size="sm" spacing={6}>
             <List.Item>Your name and email, to log you in and send reminders.</List.Item>
-            <List.Item>What you enter about your homes: address, landlord or tenant contacts, lease terms, payments, meter readings.</List.Item>
+            <List.Item>What you enter about your home: address, landlord contacts, lease terms, payments, meter readings.</List.Item>
             <List.Item>Files you upload. Photos are saved without location data. Files open only through short-lived private links.</List.Item>
           </List>
           <Text size="sm" mt="sm" c="dimmed">

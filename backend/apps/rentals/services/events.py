@@ -106,15 +106,7 @@ def calendar_events(
     return sorted(events, key=lambda event: (event.date, event.kind))
 
 
-def _payment_subject(payment: Payment, is_landlord: bool) -> str:
-    """'Rent' for a tenant; 'Rent from Aru' for a landlord, who is waiting for the tenant to pay."""
-    title = payment.display_title()
-    if is_landlord and payment.kind == Payment.Kind.RENT:
-        return f'{title} from {payment.property.contact_name or "the tenant"}'
-    return title
-
-
-def _payment_reminders(properties: list[Property], today: date, is_landlord: bool) -> list[Reminder]:
+def _payment_reminders(properties: list[Property], today: date) -> list[Reminder]:
     soon = today + timedelta(days=REMINDER_DAYS_AHEAD)
     payments = Payment.objects.filter(
         property__in=properties, paid_on__isnull=True, due_date__lte=soon
@@ -122,13 +114,12 @@ def _payment_reminders(properties: list[Property], today: date, is_landlord: boo
     reminders = []
     for payment in payments:
         overdue = payment.due_date < today
-        subject = _payment_subject(payment, is_landlord)
         if overdue:
-            title = f'{subject} is overdue'
+            title = f'{payment.display_title()} is overdue'
         elif payment.due_date == today:
-            title = f'{subject} is due today'
+            title = f'{payment.display_title()} is due today'
         else:
-            title = f'{subject} is due soon'
+            title = f'{payment.display_title()} is due soon'
         level = 'overdue' if overdue else 'soon'
         reminders.append(Reminder(
             key=f'payment:{payment.id}:{payment.due_date.isoformat()}:{level}',
@@ -203,7 +194,7 @@ def reminders_for(user: User, today: date, property_id: int | None = None) -> li
     if not properties:
         return []
     reminders = (
-        _payment_reminders(properties, today, is_landlord=user.role == User.Role.LANDLORD)
+        _payment_reminders(properties, today)
         + _meter_reminders(properties, today)
         + _contract_reminders(properties, today)
     )

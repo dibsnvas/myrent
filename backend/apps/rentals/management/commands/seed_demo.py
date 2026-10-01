@@ -1,12 +1,9 @@
-"""Create two demo accounts with a few months of history, for the demo and for QA.
+"""Create a demo tenant with three months of history, for the demo and for QA.
 
-- demo@myrent.test      a tenant: one flat, lease, rent, utilities, meter readings, condition photos
-- landlord@myrent.test  a landlord: three rented-out properties, one late payment, one lease ending soon
+    python manage.py seed_demo          # create it (skips if it exists)
+    python manage.py seed_demo --reset  # delete and recreate it
 
-    python manage.py seed_demo          # create whichever account is missing
-    python manage.py seed_demo --reset  # delete both and recreate them
-
-Both are test accounts with the same password and only made-up data.
+The account is a test account. It holds only made-up data.
 """
 from __future__ import annotations
 
@@ -26,7 +23,6 @@ from apps.rentals.models import Contract, Document, MeterReading, Payment, Prope
 from apps.rentals.services.schedule import add_months, sync_rent_schedule
 
 DEMO_EMAIL = 'demo@myrent.test'
-LANDLORD_EMAIL = 'landlord@myrent.test'
 DEMO_PASSWORD = 'myrent-demo-2026'
 
 RENT = Decimal('250000')
@@ -57,7 +53,7 @@ def _lease_pdf(prop: Property, start: date, end: date) -> bytes:
     body_font = ImageFont.load_default(size=28)
     lines = [
         f'Address: {prop.address}',
-        f'Landlord: {prop.contact_name}',
+        f'Landlord: {prop.landlord_name}',
         f'Term: {start:%d.%m.%Y} - {end:%d.%m.%Y}',
         f'Monthly rent: {RENT:,.0f} KZT, due on day {RENT_DUE_DAY} of each month'.replace(',', ' '),
         f'Deposit: {RENT:,.0f} KZT'.replace(',', ' '),
@@ -83,79 +79,32 @@ def _document(prop: Property, kind: str, name: str, data: bytes, content_type: s
     return document
 
 
-# Landlord demo: (title, address, tenant, phone, rent, due day, lease started months ago, lease length in months)
-LANDLORD_PROPERTIES = (
-    ('Studio on Tole bi', 'Tole bi 59, apt 12, Almaty', 'Aru S.', '+7 702 000 00 01', 180000, 1, 5, 12),
-    ('2-room flat in Samal', 'Samal-2, 58, apt 7, Almaty', 'Timur B.', '+7 705 000 00 02', 320000, 10, 2, 12),
-    ('Room near KBTU', 'Kazybek bi 112, room 3, Almaty', 'Dana K.', '+7 707 000 00 03', 120000, 15, 11, 11),
-)
-
-
-def _paid_until(contract: Contract, before: date, *, leave_last_unpaid: bool = False) -> None:
-    """Mark rent due before `before` as paid a day early (optionally leaving the latest one unpaid)."""
-    past = list(contract.payments.filter(due_date__lt=before).order_by('due_date'))
-    for payment in past[:-1] if leave_last_unpaid else past:
-        payment.paid_on = payment.due_date - timedelta(days=1)
-        payment.save(update_fields=['paid_on'])
-
-
 class Command(BaseCommand):
-    help = f'Create the demo accounts {DEMO_EMAIL} (tenant) and {LANDLORD_EMAIL} (landlord).'
+    help = f'Create the demo tenant {DEMO_EMAIL} with a home, lease, payments, meter readings and photos.'
 
     def add_arguments(self, parser) -> None:
-        parser.add_argument('--reset', action='store_true', help='Delete both demo accounts first.')
+        parser.add_argument('--reset', action='store_true', help='Delete the demo tenant first.')
 
     @transaction.atomic
     def handle(self, *args, **options) -> None:
-        if options['reset']:
-            User.objects.filter(email__in=[DEMO_EMAIL, LANDLORD_EMAIL]).delete()
+        existing = User.objects.filter(email=DEMO_EMAIL).first()
+        if existing and not options['reset']:
+            self.stdout.write(f'{DEMO_EMAIL} already exists. Use --reset to recreate it.')
+            return
+        if existing:
+            existing.delete()
+
         today = timezone.localdate()
-        for email, create in ((DEMO_EMAIL, self.create_tenant), (LANDLORD_EMAIL, self.create_landlord)):
-            if User.objects.filter(email=email).exists():
-                self.stdout.write(f'{email} already exists. Use --reset to recreate it.')
-                continue
-            create(today)
-            self.stdout.write(self.style.SUCCESS(
-                f'Demo account ready: {email} (password in apps/rentals/management/commands/seed_demo.py)'
-            ))
-
-    def create_landlord(self, today: date) -> None:
         user = User.objects.create_user(
-            LANDLORD_EMAIL, DEMO_PASSWORD, first_name='Demo', last_name='Landlord', role=User.Role.LANDLORD,
-            consent_given_at=timezone.now(),
-        )
-        for title, address, tenant, phone, rent, due_day, started, length in LANDLORD_PROPERTIES:
-            prop = Property.objects.create(
-                owner=user, title=title, address=address, contact_name=tenant, contact_phone=phone,
-            )
-            start = add_months(today.replace(day=due_day), -started)
-            contract = Contract.objects.create(
-                property=prop, start_date=start, end_date=add_months(start, length) - timedelta(days=1),
-                monthly_rent=Decimal(rent), rent_due_day=due_day, deposit=Decimal(rent),
-                terms='Utilities paid by the tenant. 30 days notice.',
-            )
-            sync_rent_schedule(contract)
-            # Timur is a month late; everyone else has paid everything due so far.
-            _paid_until(contract, today, leave_last_unpaid=tenant.startswith('Timur'))
-            if title.startswith('Studio'):
-                for room, description, colour in CONDITION_ROOMS[:2]:
-                    _document(
-                        prop, Document.Kind.CONDITION, f'{room.lower().replace(" ", "-")}.jpg',
-                        _image(room, colour), 'image/jpeg', room=room, description=description, taken_on=start,
-                    )
-
-    def create_tenant(self, today: date) -> None:
-        user = User.objects.create_user(
-            DEMO_EMAIL, DEMO_PASSWORD, first_name='Demo', last_name='Tenant', role=User.Role.TENANT,
-            consent_given_at=timezone.now(),
+            DEMO_EMAIL, DEMO_PASSWORD, first_name='Demo', last_name='Tenant', consent_given_at=timezone.now()
         )
         prop = Property.objects.create(
             owner=user,
             title='Flat on Abay',
             address='Abay Ave 150, apt 42, Almaty',
             property_type=Property.Type.APARTMENT,
-            contact_name='Serik K.',
-            contact_phone='+7 701 000 00 00',
+            landlord_name='Serik K.',
+            landlord_phone='+7 701 000 00 00',
             meter_reading_day=METER_DAY,
             notes='Keys: 2 sets. Intercom code 42.',
         )
@@ -170,8 +119,11 @@ class Command(BaseCommand):
             document=lease,
         )
         sync_rent_schedule(contract)
+        past_rent = list(contract.payments.filter(due_date__lt=today).order_by('due_date'))
         # Leave the most recent past rent unpaid, so the demo shows an overdue reminder.
-        _paid_until(contract, today, leave_last_unpaid=True)
+        for payment in past_rent[:-1]:
+            payment.paid_on = payment.due_date - timedelta(days=1)
+            payment.save(update_fields=['paid_on'])
 
         electricity = Utility.objects.create(property=prop, name='Electricity', unit='kWh', has_meter=True)
         water = Utility.objects.create(property=prop, name='Cold water', unit='m³', has_meter=True)
@@ -199,3 +151,7 @@ class Command(BaseCommand):
                 prop, Document.Kind.CONDITION, f'{room.lower().replace(" ", "-")}.jpg', _image(room, colour),
                 'image/jpeg', room=room, description=description, taken_on=start,
             )
+
+        self.stdout.write(self.style.SUCCESS(
+            f'Demo tenant ready: {DEMO_EMAIL} (password in apps/rentals/management/commands/seed_demo.py)'
+        ))

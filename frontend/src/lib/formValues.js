@@ -6,9 +6,9 @@ export const emptyHome = {
   address: '',
   property_type: 'apartment',
   meter_reading_day: '',
-  contact_name: '',
-  contact_phone: '',
-  contact_email: '',
+  landlord_name: '',
+  landlord_phone: '',
+  landlord_email: '',
   notes: '',
 }
 

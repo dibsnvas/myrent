@@ -55,12 +55,3 @@ body {
     margin-right: 2px;
   }
 }
-
-.role-card {
-  transition: border-color 120ms ease, box-shadow 120ms ease;
-}
-
-.role-card:hover {
-  border-color: var(--mantine-color-teal-5);
-  box-shadow: var(--mantine-shadow-sm);
-}

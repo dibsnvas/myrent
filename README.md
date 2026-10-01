@@ -23,10 +23,9 @@ Live: https://myrent-kbtu.vercel.app (frontend) · https://myrent-api-cjsp.onren
 | Contract renewal | "Renew" creates a new lease linked to the old one. History and paid rent stay |
 | Calendar and reminders | Month calendar plus a reminders banner (overdue, due in 3 days, meter day, lease ending). Daily email digest |
 | Condition photo log | Dated photos per room with descriptions. Location data stripped on upload |
-| Tenant or landlord (added after v1) | Onboarding asks "I rent a home" or "I rent out a home". Landlords get a portfolio home screen (all properties, this month's rent status, late rent, leases ending) and landlord wording everywhere. Switchable in Account |
 
 Not in v1 (Should/Could): contract amendments, maintenance issue log, monthly expense summary,
-AI contract assistant, linking a landlord and a tenant to the same lease (invitations, shared payments).
+AI contract assistant, landlord accounts.
 
 ## Project layout
 
@@ -71,9 +70,8 @@ npm run dev
 
 Open http://localhost:5173. Vite forwards `/api` to Django on port 8000.
 
-- Demo logins: `demo@myrent.test` (tenant) and `landlord@myrent.test` (landlord, three properties).
-  The password is `DEMO_PASSWORD` in `backend/apps/rentals/management/commands/seed_demo.py`.
-  Run `seed_demo --reset` to get fresh demo data.
+- Demo login: `demo@myrent.test`. The password is `DEMO_PASSWORD` in
+  `backend/apps/rentals/management/commands/seed_demo.py`. Run `seed_demo --reset` to get fresh demo data.
 - API docs (Swagger, for Amina's test cases): http://localhost:8000/api/docs/. Click "Authorize" and paste
   the `access` token from `POST /api/auth/login/`.
 - Admin: `python manage.py createsuperuser`, then http://localhost:8000/admin/.
@@ -124,9 +122,6 @@ Free-tier facts that shaped this setup:
 - **Reminders are calculated, not scheduled.** `services/events.py` works out what is overdue or due soon
   on every request, so there is no Celery, no Redis and no worker. The cron only emails the same list.
   `ReminderLog` makes sure each reminder is emailed once.
-- **Roles change the view, not the data.** `User.role` is set on the onboarding screen. A landlord's
-  property stores the tenant in the same `contact_*` fields a tenant uses for the landlord. The frontend
-  takes its wording from `src/lib/copy.js`, and `/api/properties/overview/` feeds the landlord's home screen.
 - **One `Payment` table** for rent, utility bills and other costs. The calendar and a future monthly
   summary are each one query.
 - **Renewal = new `Contract` row** pointing at the previous one. Paid history is never rewritten. Unpaid

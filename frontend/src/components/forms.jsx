@@ -1,22 +1,20 @@
 /** Field groups shared by the "add a home" wizard and the edit modals. Each takes a Mantine form. */
 import { NumberInput, Select, SimpleGrid, Stack, Textarea, TextInput } from '@mantine/core'
 
-import { useCopy } from '../auth/useCopy'
 import { PROPERTY_TYPES } from '../lib/format'
 
 export function HomeFields({ form }) {
-  const copy = useCopy()
   return (
     <Stack>
       <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <TextInput label="Name" placeholder={copy.namePlaceholder} withAsterisk {...form.getInputProps('title')} />
+        <TextInput label="Name" placeholder="Flat on Abay" withAsterisk {...form.getInputProps('title')} />
         <Select label="Type" data={PROPERTY_TYPES} allowDeselect={false} {...form.getInputProps('property_type')} />
       </SimpleGrid>
       <TextInput label="Address" placeholder="Street, building, apartment, city" withAsterisk
         {...form.getInputProps('address')} />
       <NumberInput
         label="Meter readings are due on day"
-        description="Leave empty if meters are not read every month"
+        description="Leave empty if you don't submit meter readings"
         min={1}
         max={28}
         allowDecimal={false}
@@ -24,9 +22,9 @@ export function HomeFields({ form }) {
         {...form.getInputProps('meter_reading_day')}
       />
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <TextInput label={copy.contactName} {...form.getInputProps('contact_name')} />
-        <TextInput label={copy.contactPhone} placeholder="+7 7__ ___ __ __" {...form.getInputProps('contact_phone')} />
-        <TextInput label={copy.contactEmail} type="email" {...form.getInputProps('contact_email')} />
+        <TextInput label="Landlord name" {...form.getInputProps('landlord_name')} />
+        <TextInput label="Landlord phone" placeholder="+7 7__ ___ __ __" {...form.getInputProps('landlord_phone')} />
+        <TextInput label="Landlord email" type="email" {...form.getInputProps('landlord_email')} />
       </SimpleGrid>
       <Textarea label="Notes" placeholder="Keys, intercom code, anything to remember" autosize minRows={2}
         {...form.getInputProps('notes')} />

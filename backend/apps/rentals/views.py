@@ -38,7 +38,6 @@ from apps.rentals.serializers import (
 )
 from apps.rentals.services.events import calendar_events, month_bounds, reminders_for
 from apps.rentals.services.notify import send_reminder_emails
-from apps.rentals.services.portfolio import portfolio_overview
 from apps.rentals.services.schedule import delete_contract, renew_contract, sync_rent_schedule
 from apps.rentals.services.uploads import document_for_token
 
@@ -78,12 +77,6 @@ class PropertyViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer: PropertySerializer) -> None:
         serializer.save(owner=self.request.user)
-
-    @extend_schema(responses=OpenApiTypes.OBJECT)
-    @action(detail=False)
-    def overview(self, request: Request) -> Response:
-        """All properties with this month's rent status and lease end: the landlord's home screen."""
-        return Response(portfolio_overview(request.user, timezone.localdate()))
 
     @extend_schema(responses=OpenApiTypes.OBJECT)
     @action(detail=True)

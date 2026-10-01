@@ -1,6 +1,5 @@
 import { Group, Text } from '@mantine/core'
 
-import { useCopy } from '../auth/useCopy'
 import { formatMoney, isoDate, todayIso } from '../lib/format'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -12,17 +11,16 @@ function eventStyle(event) {
   return { background: `var(--mantine-color-${palette}-1)`, color: `var(--mantine-color-${palette}-9)` }
 }
 
-const legend = (labels) => [
-  { label: labels.due, style: eventStyle({ kind: 'payment', status: 'due' }) },
-  { label: labels.paid, style: eventStyle({ kind: 'payment', status: 'paid' }) },
-  { label: labels.overdue, style: eventStyle({ kind: 'payment', status: 'overdue' }) },
+const LEGEND = [
+  { label: 'Due', style: eventStyle({ kind: 'payment', status: 'due' }) },
+  { label: 'Paid', style: eventStyle({ kind: 'payment', status: 'paid' }) },
+  { label: 'Overdue', style: eventStyle({ kind: 'payment', status: 'overdue' }) },
   { label: 'Meter readings', style: eventStyle({ kind: 'meter_reading' }) },
   { label: 'Lease ends', style: eventStyle({ kind: 'contract_end' }) },
 ]
 
 /** Month grid, Monday first. `month` is 'YYYY-MM'; events come from /api/calendar/. */
 export default function MonthCalendar({ month, events }) {
-  const copy = useCopy()
   const [year, monthNumber] = month.split('-').map(Number)
   const first = new Date(year, monthNumber - 1, 1)
   const leadingBlanks = (first.getDay() + 6) % 7
@@ -75,7 +73,7 @@ export default function MonthCalendar({ month, events }) {
         )}
       </div>
       <Group gap="md" mt="sm">
-        {legend(copy.statusLabels).map(({ label, style }) => (
+        {LEGEND.map(({ label, style }) => (
           <Group key={label} gap={6}>
             <span style={{ ...style, width: 10, height: 10, borderRadius: 3, display: 'inline-block' }} />
             <Text size="xs" c="dimmed">

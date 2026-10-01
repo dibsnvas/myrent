@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom'
 
 import { api, fieldErrors } from '../api/client'
 import { uploadDocument, useSave } from '../api/queries'
-import { useCopy } from '../auth/useCopy'
 import { PageHeader } from '../components/common'
 import { HomeFields, LeaseFields } from '../components/forms'
 import { FILE_ACCEPT } from '../components/modals'
@@ -14,7 +13,6 @@ import { emptyHome, emptyLease, homeToApi, homeValidation, leaseToApi, leaseVali
 
 /** Three steps, each saved as soon as it is done: home -> lease -> lease file. */
 export default function NewHomePage() {
-  const copy = useCopy()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [home, setHome] = useState(null)
@@ -46,10 +44,10 @@ export default function NewHomePage() {
 
   return (
     <>
-      <PageHeader title={copy.addHome} subtitle="Three short steps. You can change everything later." />
+      <PageHeader title="Add a home" subtitle="Three short steps. You can change everything later." />
       <Paper withBorder p={{ base: 'md', sm: 'xl' }} radius="lg" maw={860}>
         <Stepper active={step} size="sm" allowNextStepsSelect={false}>
-          <Stepper.Step label={copy.home[0].toUpperCase() + copy.home.slice(1)} description={copy.contactStep}>
+          <Stepper.Step label="Home" description="Address and landlord">
             <form
               onSubmit={homeForm.onSubmit((values) =>
                 saveHome.mutate(values, {
@@ -84,7 +82,8 @@ export default function NewHomePage() {
             >
               <Stack>
                 <Text size="sm" c="dimmed">
-                  {copy.leaseIntro}
+                  MyRent creates one rent payment per month from these dates, so the calendar and reminders work
+                  straight away.
                 </Text>
                 <LeaseFields form={leaseForm} />
               </Stack>

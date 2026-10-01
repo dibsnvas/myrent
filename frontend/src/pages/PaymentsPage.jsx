@@ -15,17 +15,13 @@ import { useParams } from 'react-router-dom'
 
 import { api } from '../api/client'
 import { useCalendar, usePayments, useSave, useUtilities } from '../api/queries'
-import { useCopy } from '../auth/useCopy'
 import { EmptyState, PageHeader, QueryState, StatusBadge } from '../components/common'
 import { PaymentModal } from '../components/modals'
 import MonthCalendar from '../components/MonthCalendar'
 import { currentMonth, formatDate, formatMoney, monthLabel, shiftMonth } from '../lib/format'
 
 function PaymentRow({ payment, onEdit }) {
-  const copy = useCopy()
-  const markPaid = useSave(() => api.post(`/payments/${payment.id}/mark-paid/`, {}), {
-    success: `Marked as ${copy.statusLabels.paid.toLowerCase()}`,
-  })
+  const markPaid = useSave(() => api.post(`/payments/${payment.id}/mark-paid/`, {}), { success: 'Marked as paid' })
   const markUnpaid = useSave(() => api.post(`/payments/${payment.id}/mark-unpaid/`))
   const remove = useSave(() => api.delete(`/payments/${payment.id}/`), { success: 'Payment deleted' })
   const isPaid = payment.status === 'paid'
@@ -54,7 +50,7 @@ function PaymentRow({ payment, onEdit }) {
           {!isPaid && (
             <Button size="compact-sm" variant="light" leftSection={<IconCheck size={14} />}
               loading={markPaid.isPending} onClick={() => markPaid.mutate()}>
-              {copy.markPaid}
+              Paid
             </Button>
           )}
           <Menu position="bottom-end">
@@ -67,7 +63,7 @@ function PaymentRow({ payment, onEdit }) {
               <Menu.Item leftSection={<IconPencil size={14} />} onClick={onEdit}>Edit</Menu.Item>
               {isPaid && (
                 <Menu.Item leftSection={<IconX size={14} />} onClick={() => markUnpaid.mutate()}>
-                  {copy.markUnpaid}
+                  Mark as unpaid
                 </Menu.Item>
               )}
               <Menu.Item
@@ -86,7 +82,6 @@ function PaymentRow({ payment, onEdit }) {
 }
 
 export default function PaymentsPage() {
-  const copy = useCopy()
   const { homeId } = useParams()
   const [month, setMonth] = useState(currentMonth)
   const payments = usePayments(homeId, month)
@@ -106,7 +101,7 @@ export default function PaymentsPage() {
     <>
       <PageHeader
         title="Payments & calendar"
-        subtitle={copy.paymentsSubtitle}
+        subtitle="Rent is created from your lease. Add utility bills and anything else you pay for the home."
         actions={
           <Button leftSection={<IconPlus size={16} />} onClick={() => setEditing('new')}>
             Add payment
@@ -138,7 +133,7 @@ export default function PaymentsPage() {
         <Group justify="space-between" mb="sm">
           <Title order={4}>Payments in {monthLabel(month)}</Title>
           <Text size="sm" c="dimmed">
-            {formatMoney(totals.paid)} of {formatMoney(totals.all)} {copy.monthPaid}
+            {formatMoney(totals.paid)} of {formatMoney(totals.all)} paid
           </Text>
         </Group>
         <QueryState query={payments}>

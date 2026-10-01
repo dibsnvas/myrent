@@ -5,7 +5,6 @@ import { useParams } from 'react-router-dom'
 
 import { api } from '../api/client'
 import { useDocuments, useSave } from '../api/queries'
-import { useCopy } from '../auth/useCopy'
 import { EmptyState, PageHeader, QueryState } from '../components/common'
 import { UploadModal } from '../components/modals'
 import { formatBytes, formatDate } from '../lib/format'
@@ -17,14 +16,13 @@ function useDelete() {
 }
 
 function ConditionLog({ photos, onUpload }) {
-  const copy = useCopy()
   const remove = useDelete()
   if (!photos.length) {
     return (
       <EmptyState
         icon={IconCamera}
         title="No condition photos yet"
-        text={copy.conditionHint}
+        text="On move-in, photograph every room and every existing scratch, stain or broken thing. Dated photos protect your deposit when you move out."
         action={<Button leftSection={<IconUpload size={16} />} onClick={onUpload}>Upload photo</Button>}
       />
     )
