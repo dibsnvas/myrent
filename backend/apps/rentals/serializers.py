@@ -290,7 +290,7 @@ class PropertySerializer(serializers.ModelSerializer):
     class Meta:
         model = Property
         fields = (
-            'id', 'title', 'address', 'property_type', 'landlord_name', 'landlord_phone', 'landlord_email',
+            'id', 'title', 'address', 'property_type', 'contact_name', 'contact_phone', 'contact_email',
             'meter_reading_day', 'notes', 'active_contract', 'created_at',
         )
         read_only_fields = ('created_at',)

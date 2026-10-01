@@ -2,6 +2,7 @@ import { Alert, Badge, Button, Center, Group, Loader, Stack, Text, Title } from 
 import { IconAlertTriangle, IconBell, IconClockExclamation, IconInfoCircle } from '@tabler/icons-react'
 
 import { errorMessage } from '../api/client'
+import { useCopy } from '../auth/useCopy'
 import { formatDate, formatMoney, PAYMENT_STATUS, REMINDER_LEVEL } from '../lib/format'
 
 export function PageHeader({ title, subtitle, actions }) {
@@ -45,17 +46,19 @@ export function QueryState({ query, children }) {
 }
 
 export function StatusBadge({ status }) {
-  const { color, label } = PAYMENT_STATUS[status] ?? { color: 'gray', label: status }
+  const copy = useCopy()
+  const color = PAYMENT_STATUS[status]?.color ?? 'gray'
   return (
     <Badge color={color} variant="light">
-      {label}
+      {copy.statusLabels[status] ?? status}
     </Badge>
   )
 }
 
 const LEVEL_ICON = { overdue: IconClockExclamation, soon: IconBell, info: IconInfoCircle }
 
-export function ReminderList({ reminders }) {
+/** `showProperty` adds the property name, for screens that cover several properties. */
+export function ReminderList({ reminders, showProperty = false }) {
   if (!reminders.length) return null
   return (
     <Stack gap="xs" mb="lg">
@@ -67,6 +70,11 @@ export function ReminderList({ reminders }) {
               <Text size="sm" fw={500}>
                 {reminder.title}
                 {reminder.amount && ` · ${formatMoney(reminder.amount)}`}
+                {showProperty && (
+                  <Text span size="sm" c="dimmed" fw={400}>
+                    {' '}· {reminder.property_title}
+                  </Text>
+                )}
               </Text>
               <Text size="sm" c="dimmed">
                 {formatDate(reminder.date)}

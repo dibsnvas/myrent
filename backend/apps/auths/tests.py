@@ -61,3 +61,12 @@ class AuthTests(APITestCase):
         right = self.client.delete(reverse('me'), {'password': STRONG_PASSWORD}, format='json')
         self.assertEqual(right.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(User.objects.exists())
+
+    def test_role_is_chosen_after_sign_up(self) -> None:
+        response = self.register()
+        self.assertIsNone(response.data['user']['role'])  # the frontend shows onboarding while it is empty
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {response.data["access"]}')
+        chosen = self.client.patch(reverse('me'), {'role': 'landlord'}, format='json')
+        self.assertEqual(chosen.data['role'], 'landlord')
+        wrong = self.client.patch(reverse('me'), {'role': 'agent'}, format='json')
+        self.assertEqual(wrong.status_code, status.HTTP_400_BAD_REQUEST)

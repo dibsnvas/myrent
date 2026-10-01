@@ -7,6 +7,10 @@ const get = (url, params) => api.get(url, { params }).then((response) => respons
 
 export const useProperties = () => useQuery({ queryKey: ['properties'], queryFn: () => get('/properties/') })
 
+export const useOverview = () => useQuery({ queryKey: ['overview'], queryFn: () => get('/properties/overview/') })
+
+export const useReminders = () => useQuery({ queryKey: ['reminders'], queryFn: () => get('/reminders/') })
+
 export const useDashboard = (homeId) =>
   useQuery({ queryKey: ['dashboard', homeId], queryFn: () => get(`/properties/${homeId}/dashboard/`) })
 

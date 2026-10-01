@@ -7,12 +7,13 @@ from apps.auths.models import User
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     ordering = ('email',)
-    list_display = ('email', 'first_name', 'last_name', 'consent_given_at', 'is_active', 'is_staff')
+    list_display = ('email', 'first_name', 'last_name', 'role', 'consent_given_at', 'is_active', 'is_staff')
     search_fields = ('email', 'first_name', 'last_name')
+    list_filter = ('role', 'is_staff')
     readonly_fields = ('consent_given_at', 'date_joined', 'last_login')
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name', 'consent_given_at')}),
+        ('Personal info', {'fields': ('first_name', 'last_name', 'role', 'consent_given_at')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('date_joined', 'last_login')}),
     )

@@ -2,6 +2,7 @@ import { AppShell, Burger, Group, Menu, NavLink, Select, Text, ThemeIcon, Unstyl
 import { useDisclosure } from '@mantine/hooks'
 import {
   IconBolt,
+  IconBuildingCommunity,
   IconCalendarDollar,
   IconChevronDown,
   IconFiles,
@@ -16,6 +17,7 @@ import { Link, Outlet, useLocation, useMatch, useNavigate } from 'react-router-d
 
 import { useProperties } from '../api/queries'
 import { useAuth } from '../auth/useAuth'
+import { useCopy } from '../auth/useCopy'
 
 export const LAST_HOME_KEY = 'myrent.lastHome'
 
@@ -29,6 +31,8 @@ const HOME_LINKS = [
 export default function Layout() {
   const [navOpened, { toggle, close }] = useDisclosure()
   const { user, logout } = useAuth()
+  const copy = useCopy()
+  const isLandlord = user?.role === 'landlord'
   const { data: homes = [] } = useProperties()
   const navigate = useNavigate()
   const location = useLocation()
@@ -76,7 +80,7 @@ export default function Layout() {
                 w={{ base: 150, sm: 220 }}
                 data={homes.map((home) => ({ value: String(home.id), label: home.title }))}
                 value={homeId}
-                placeholder="Choose a home"
+                placeholder={copy.choosePlaceholder}
                 onChange={switchHome}
                 allowDeselect={false}
               />
@@ -106,6 +110,17 @@ export default function Layout() {
       </AppShell.Header>
 
       <AppShell.Navbar p="sm">
+        {isLandlord && (
+          <NavLink
+            component={Link}
+            to="/"
+            label="All properties"
+            leftSection={<IconBuildingCommunity size={18} />}
+            active={location.pathname === '/'}
+            onClick={close}
+            mb={homeId ? 'xs' : 0}
+          />
+        )}
         {homeId &&
           HOME_LINKS.map(({ path, label, icon: Icon }) => {
             const to = `/homes/${homeId}${path}`
@@ -124,7 +139,7 @@ export default function Layout() {
         <NavLink
           component={Link}
           to="/homes/new"
-          label="Add a home"
+          label={copy.addHome}
           leftSection={<IconPlus size={18} />}
           active={location.pathname === '/homes/new'}
           onClick={close}

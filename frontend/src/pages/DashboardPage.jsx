@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { useDashboard } from '../api/queries'
+import { useCopy } from '../auth/useCopy'
 import { EmptyState, PageHeader, QueryState, ReminderList } from '../components/common'
 import { EditHomeModal, LeaseModal, RenewModal } from '../components/modals'
 import { formatDate, formatMoney, relativeDays } from '../lib/format'
@@ -99,32 +100,33 @@ function LeaseCard({ homeId, lease, onAdd, onEdit, onRenew }) {
   )
 }
 
-function LandlordCard({ home, onEdit }) {
-  const hasContacts = home.landlord_name || home.landlord_phone || home.landlord_email
+function ContactCard({ home, onEdit }) {
+  const copy = useCopy()
+  const hasContacts = home.contact_name || home.contact_phone || home.contact_email
   return (
     <Card withBorder padding="lg">
       <Group justify="space-between" mb="sm">
-        <Title order={4}>Landlord</Title>
+        <Title order={4}>{copy.contactTitle}</Title>
         <Button size="xs" variant="default" leftSection={<IconPencil size={14} />} onClick={onEdit}>
           Edit
         </Button>
       </Group>
       {hasContacts ? (
         <Stack gap={6}>
-          {home.landlord_name && <Text fw={500}>{home.landlord_name}</Text>}
-          {home.landlord_phone && (
-            <Anchor href={`tel:${home.landlord_phone.replace(/\s/g, '')}`} size="sm">
-              <Group gap={6}><IconPhone size={16} />{home.landlord_phone}</Group>
+          {home.contact_name && <Text fw={500}>{home.contact_name}</Text>}
+          {home.contact_phone && (
+            <Anchor href={`tel:${home.contact_phone.replace(/\s/g, '')}`} size="sm">
+              <Group gap={6}><IconPhone size={16} />{home.contact_phone}</Group>
             </Anchor>
           )}
-          {home.landlord_email && (
-            <Anchor href={`mailto:${home.landlord_email}`} size="sm">
-              <Group gap={6}><IconMail size={16} />{home.landlord_email}</Group>
+          {home.contact_email && (
+            <Anchor href={`mailto:${home.contact_email}`} size="sm">
+              <Group gap={6}><IconMail size={16} />{home.contact_email}</Group>
             </Anchor>
           )}
         </Stack>
       ) : (
-        <Text size="sm" c="dimmed">No contacts saved.</Text>
+        <Text size="sm" c="dimmed">{copy.noContact}</Text>
       )}
       {home.notes && (
         <Text size="sm" mt="md" c="dimmed" style={{ whiteSpace: 'pre-line' }}>
@@ -172,6 +174,7 @@ function UtilitiesCard({ homeId, utilities }) {
 }
 
 export default function DashboardPage() {
+  const copy = useCopy()
   const { homeId } = useParams()
   const dashboard = useDashboard(homeId)
   const [modal, setModal] = useState(null) // 'home' | 'lease-add' | 'lease-edit' | 'renew'
@@ -190,7 +193,7 @@ export default function DashboardPage() {
               subtitle={home.address}
               actions={
                 <Button variant="default" leftSection={<IconPencil size={16} />} onClick={() => setModal('home')}>
-                  Edit home
+                  {copy.editHome}
                 </Button>
               }
             />
@@ -198,24 +201,24 @@ export default function DashboardPage() {
 
             <SimpleGrid cols={{ base: 1, sm: 3 }} mb="lg">
               <StatCard
-                label="Next rent"
+                label={copy.nextRent}
                 value={nextRent ? formatMoney(nextRent.amount) : '—'}
                 hint={
                   <Group gap={6} mt={4}>
                     <IconCalendarDue size={16} color="var(--mantine-color-gray-6)" />
                     <Text size="sm" c="dimmed">
-                      {nextRent ? `${formatDate(nextRent.due_date)}, ${relativeDays(nextRent.due_date)}` : 'No upcoming rent'}
+                      {nextRent ? `${formatDate(nextRent.due_date)}, ${relativeDays(nextRent.due_date)}` : copy.noUpcomingRent}
                     </Text>
                   </Group>
                 }
               />
               <StatCard
-                label="Overdue"
+                label={copy.statusLabels.overdue}
                 value={overdue.count ? formatMoney(overdue.total) : 'Nothing'}
                 color={overdue.count ? 'red' : 'teal'}
                 hint={
                   <Text size="sm" c="dimmed" mt={4}>
-                    {overdue.count ? `${overdue.count} unpaid ${overdue.count === 1 ? 'payment' : 'payments'}` : 'All paid on time'}
+                    {overdue.count ? copy.overdueSome(overdue.count) : copy.overdueNone}
                   </Text>
                 }
               />
@@ -226,7 +229,7 @@ export default function DashboardPage() {
                   <Stack gap={6} mt={6}>
                     <Progress value={paidShare} size="sm" />
                     <Text size="sm" c="dimmed">
-                      {formatMoney(month.paid)} paid · {formatMoney(month.unpaid)} left
+                      {formatMoney(month.paid)} {copy.monthPaid} · {formatMoney(month.unpaid)} {copy.monthLeft}
                     </Text>
                   </Stack>
                 }
@@ -242,7 +245,7 @@ export default function DashboardPage() {
                 onRenew={() => setModal('renew')}
               />
               <Stack>
-                <LandlordCard home={home} onEdit={() => setModal('home')} />
+                <ContactCard home={home} onEdit={() => setModal('home')} />
                 <UtilitiesCard homeId={homeId} utilities={data.utilities} />
               </Stack>
             </SimpleGrid>

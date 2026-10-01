@@ -22,7 +22,7 @@ def tokens_for(user: User) -> dict[str, str]:
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'email', 'first_name', 'last_name', 'consent_given_at', 'date_joined')
+        fields = ('id', 'email', 'first_name', 'last_name', 'role', 'consent_given_at', 'date_joined')
         read_only_fields = ('id', 'email', 'consent_given_at', 'date_joined')
 
 

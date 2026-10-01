@@ -36,7 +36,7 @@ POSITIVE_MONEY_VALIDATORS = [MinValueValidator(Decimal('0.01'))]
 
 
 class Property(models.Model):
-    """A rented home: flat, room or house."""
+    """A home the user rents (tenant) or rents out (landlord): flat, room or house."""
 
     class Type(models.TextChoices):
         APARTMENT = 'apartment', 'Apartment'
@@ -47,9 +47,10 @@ class Property(models.Model):
     title = models.CharField(max_length=TITLE_MAX_LENGTH)
     address = models.CharField(max_length=ADDRESS_MAX_LENGTH)
     property_type = models.CharField(max_length=CHOICE_MAX_LENGTH, choices=Type.choices, default=Type.APARTMENT)
-    landlord_name = models.CharField(max_length=PERSON_NAME_MAX_LENGTH, blank=True)
-    landlord_phone = models.CharField(max_length=PHONE_MAX_LENGTH, blank=True)
-    landlord_email = models.EmailField(blank=True)
+    # The other side of the lease: the landlord for a tenant, the tenant for a landlord.
+    contact_name = models.CharField(max_length=PERSON_NAME_MAX_LENGTH, blank=True)
+    contact_phone = models.CharField(max_length=PHONE_MAX_LENGTH, blank=True)
+    contact_email = models.EmailField(blank=True)
     meter_reading_day = models.PositiveSmallIntegerField(
         null=True,
         blank=True,
