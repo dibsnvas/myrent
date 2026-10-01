@@ -1,0 +1,49 @@
+# Render Blueprint: Render dashboard -> New -> Blueprint -> pick this repository.
+# Values marked "sync: false" are asked for once in the dashboard (see README, "Deploy").
+services:
+  - type: web
+    name: myrent-api
+    runtime: python
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    buildCommand: ./build.sh
+    startCommand: gunicorn settings.wsgi:application
+    healthCheckPath: /api/health/
+    envVars:
+      - key: MYRENT_ENV_ID
+        value: prod
+      - key: MYRENT_SECRET_KEY
+        generateValue: true
+      - key: MYRENT_CRON_SECRET
+        generateValue: true
+      - key: MYRENT_ALLOWED_HOSTS
+        value: "" # Render's own hostname is added automatically
+      - key: MYRENT_CORS_ALLOWED_ORIGINS
+        sync: false # https://your-app.vercel.app
+      - key: MYRENT_FRONTEND_URL
+        sync: false # https://your-app.vercel.app
+      - key: MYRENT_DB_HOST
+        sync: false
+      - key: MYRENT_DB_USER
+        sync: false
+      - key: MYRENT_DB_PASSWORD
+        sync: false
+      - key: MYRENT_DB_NAME
+        value: postgres
+      - key: MYRENT_DB_PORT
+        value: "5432"
+      - key: MYRENT_USE_S3
+        value: "True"
+      - key: MYRENT_S3_BUCKET
+        value: documents
+      - key: MYRENT_S3_ENDPOINT_URL
+        sync: false
+      - key: MYRENT_S3_REGION
+        sync: false
+      - key: MYRENT_S3_ACCESS_KEY_ID
+        sync: false
+      - key: MYRENT_S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: MYRENT_RESEND_API_KEY
+        sync: false

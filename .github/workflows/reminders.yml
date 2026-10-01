@@ -1,0 +1,21 @@
+# Daily reminder emails. Needs two repository secrets (Settings -> Secrets and variables -> Actions):
+#   MYRENT_API_URL     e.g. https://myrent-api.onrender.com
+#   MYRENT_CRON_SECRET the same value as MYRENT_CRON_SECRET on Render
+# The endpoint never emails the same reminder twice, so retries and manual runs are safe.
+name: Daily reminders
+
+on:
+  schedule:
+    - cron: '0 4 * * *' # 09:00 in Almaty (UTC+5)
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake the API and send reminder emails
+        run: |
+          curl --fail --silent --show-error \
+            --retry 4 --retry-delay 30 --retry-all-errors --max-time 120 \
+            -X POST -H "X-Cron-Secret: ${{ secrets.MYRENT_CRON_SECRET }}" \
+            "${{ secrets.MYRENT_API_URL }}/api/internal/send-reminders/"
