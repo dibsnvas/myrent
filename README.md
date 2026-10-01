@@ -9,7 +9,7 @@ React (Vite) on Vercel  ->  Django + DRF API on Render  ->  Render Postgres (rec
                      GitHub Actions daily cron (reminder emails via Resend, optional)
 ```
 
-Live: https://myrent-kbtu.vercel.app (frontend) · https://myrent-api.onrender.com/api/docs/ (API)
+Live: https://myrent-kbtu.vercel.app (frontend) · https://myrent-api-cjsp.onrender.com/api/docs/ (API)
 
 ## What v1 covers (all 8 Must features)
 
@@ -87,7 +87,7 @@ cd frontend && npm run lint && npm run build
 ## Deploy (free tier)
 
 Frontend: Vercel project `myrent-kbtu`, root directory `frontend`, linked to this repo, so every push to
-`main` redeploys it. Environment variable `VITE_API_URL=https://myrent-api.onrender.com`.
+`main` redeploys it. Environment variable `VITE_API_URL=https://myrent-api-cjsp.onrender.com`.
 
 API + database: `render.yaml` is a Render Blueprint. Render dashboard -> New -> Blueprint -> this repo
 -> Deploy. It creates `myrent-api` and the free Postgres `myrent-db` and wires them together:
@@ -102,7 +102,7 @@ Optional extras:
 - Reminder emails: create a resend.com API key and set `MYRENT_RESEND_API_KEY` on Render. Without it,
   reminders still show in the app and emails are only printed to Render's log.
 - Daily cron: in GitHub -> Settings -> Secrets -> Actions add `MYRENT_API_URL`
-  (`https://myrent-api.onrender.com`) and `MYRENT_CRON_SECRET` (copy it from Render's environment). Until
+  (`https://myrent-api-cjsp.onrender.com`) and `MYRENT_CRON_SECRET` (copy it from Render's environment). Until
   then the workflow skips itself.
 
 Free-tier facts that shaped this setup:
