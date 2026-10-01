@@ -10,13 +10,13 @@ from settings.conf import (
     DB_PORT,
     DB_SSLMODE,
     DB_USER,
+    FILE_STORAGE,
     RESEND_API_KEY,
     S3_ACCESS_KEY_ID,
     S3_BUCKET,
     S3_ENDPOINT_URL,
     S3_REGION,
     S3_SECRET_ACCESS_KEY,
-    USE_S3,
 )
 
 DEBUG = False
@@ -34,7 +34,7 @@ DATABASES = {
     }
 }
 
-if USE_S3:
+if FILE_STORAGE == 's3':
     DEFAULT_FILE_STORAGE_CONFIG = {
         'BACKEND': 'storages.backends.s3.S3Storage',
         'OPTIONS': {
@@ -49,6 +49,8 @@ if USE_S3:
             'file_overwrite': False,
         },
     }
+elif FILE_STORAGE == 'database':
+    DEFAULT_FILE_STORAGE_CONFIG = {'BACKEND': 'apps.rentals.storage.DatabaseStorage'}
 else:
     DEFAULT_FILE_STORAGE_CONFIG = {'BACKEND': 'django.core.files.storage.FileSystemStorage'}
 

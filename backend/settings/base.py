@@ -4,6 +4,7 @@ from pathlib import Path
 
 from settings.conf import (  # noqa: F401
     ALLOWED_HOSTS,
+    CORS_ALLOWED_ORIGIN_REGEXES,
     CORS_ALLOWED_ORIGINS,
     CRON_SECRET,
     FRONTEND_URL,

@@ -5,9 +5,10 @@ from PIL import Image
 from rest_framework import status
 
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import override_settings
 from django.urls import reverse
 
-from apps.rentals.models import Document
+from apps.rentals.models import Document, StoredFile
 from apps.rentals.tests.base import RentalsTestCase, image_upload, pdf_upload
 
 
@@ -74,3 +75,33 @@ class UploadTests(RentalsTestCase):
         self.upload(pdf_upload())
         self.as_other()
         self.assertEqual(self.client.get(reverse('document-list')).data, [])
+
+
+DATABASE_STORAGES = {
+    'default': {'BACKEND': 'apps.rentals.storage.DatabaseStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+}
+
+
+@override_settings(STORAGES=DATABASE_STORAGES)
+class DatabaseStorageTests(RentalsTestCase):
+    """Production on free Render keeps file bytes in Postgres (MYRENT_FILE_STORAGE=database)."""
+
+    def test_upload_download_delete_in_database(self) -> None:
+        response = self.client.post(
+            reverse('document-list'),
+            {'property': self.home.id, 'kind': 'lease', 'file': pdf_upload(size=4000)},
+            format='multipart',
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        stored = StoredFile.objects.get()
+        self.assertEqual(stored.size, 4000)
+
+        self.client.force_authenticate(None)
+        file_response = self.client.get(response.data['url'])
+        self.assertEqual(file_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(b''.join(file_response.streaming_content)), 4000)
+
+        self.client.force_authenticate(self.user)
+        self.client.delete(reverse('document-detail', args=[response.data['id']]))
+        self.assertFalse(StoredFile.objects.exists())

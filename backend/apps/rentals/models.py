@@ -244,3 +244,15 @@ class ReminderLog(models.Model):
 
     def __str__(self) -> str:
         return f'{self.user} · {self.key}'
+
+
+class StoredFile(models.Model):
+    """File bytes for DatabaseStorage (MYRENT_FILE_STORAGE=database): uploads live in Postgres, no extra service."""
+
+    name = models.CharField(max_length=255, unique=True)
+    content = models.BinaryField()
+    size = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return self.name

@@ -1,5 +1,13 @@
-# Render Blueprint: Render dashboard -> New -> Blueprint -> pick this repository.
-# Values marked "sync: false" are asked for once in the dashboard (see README, "Deploy").
+# Render Blueprint: Render dashboard -> New -> Blueprint -> pick this repository -> Deploy.
+# Creates the API and a free Postgres database and wires them together; nothing to copy by hand.
+# Free Postgres on Render expires 30 days after creation (then 14 days to upgrade or move the data).
+databases:
+  - name: myrent-db
+    plan: free
+    region: frankfurt
+    databaseName: myrent
+    user: myrent
+
 services:
   - type: web
     name: myrent-api
@@ -20,30 +28,24 @@ services:
       - key: MYRENT_ALLOWED_HOSTS
         value: "" # Render's own hostname is added automatically
       - key: MYRENT_CORS_ALLOWED_ORIGINS
-        sync: false # https://your-app.vercel.app
+        value: ""
+      - key: MYRENT_CORS_ALLOWED_ORIGIN_REGEXES
+        value: ^https://myrent-kbtu[a-z0-9-]*\.vercel\.app$
       - key: MYRENT_FRONTEND_URL
-        sync: false # https://your-app.vercel.app
-      - key: MYRENT_DB_HOST
-        sync: false
-      - key: MYRENT_DB_USER
-        sync: false
-      - key: MYRENT_DB_PASSWORD
-        sync: false
-      - key: MYRENT_DB_NAME
-        value: postgres
-      - key: MYRENT_DB_PORT
-        value: "5432"
-      - key: MYRENT_USE_S3
+        value: https://myrent-kbtu.vercel.app
+      - key: MYRENT_FILE_STORAGE
+        value: database
+      - key: MYRENT_SEED_DEMO
         value: "True"
-      - key: MYRENT_S3_BUCKET
-        value: documents
-      - key: MYRENT_S3_ENDPOINT_URL
-        sync: false
-      - key: MYRENT_S3_REGION
-        sync: false
-      - key: MYRENT_S3_ACCESS_KEY_ID
-        sync: false
-      - key: MYRENT_S3_SECRET_ACCESS_KEY
-        sync: false
-      - key: MYRENT_RESEND_API_KEY
-        sync: false
+      - key: MYRENT_DB_HOST
+        fromDatabase: { name: myrent-db, property: host }
+      - key: MYRENT_DB_PORT
+        fromDatabase: { name: myrent-db, property: port }
+      - key: MYRENT_DB_NAME
+        fromDatabase: { name: myrent-db, property: database }
+      - key: MYRENT_DB_USER
+        fromDatabase: { name: myrent-db, property: user }
+      - key: MYRENT_DB_PASSWORD
+        fromDatabase: { name: myrent-db, property: password }
+      - key: MYRENT_DB_SSLMODE
+        value: prefer # internal network connection
