@@ -79,3 +79,20 @@ class DeleteAccountSerializer(serializers.Serializer):
         if not self.context['request'].user.check_password(value):
             raise serializers.ValidationError('Wrong password.')
         return value
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+    new_password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+
+    def validate_current_password(self, value: str) -> str:
+        if not self.context['request'].user.check_password(value):
+            raise serializers.ValidationError('Wrong password.')
+        return value
+
+    def validate_new_password(self, value: str) -> str:
+        try:
+            validate_password(value, user=self.context['request'].user)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError(list(exc.messages)) from exc
+        return value

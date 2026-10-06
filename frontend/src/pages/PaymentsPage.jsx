@@ -1,178 +1,146 @@
-import { ActionIcon, Anchor, Button, Card, Group, Menu, Table, Text, Title } from '@mantine/core'
-import {
-  IconCheck,
-  IconChevronLeft,
-  IconChevronRight,
-  IconDots,
-  IconPencil,
-  IconPlus,
-  IconReceipt,
-  IconTrash,
-  IconX,
-} from '@tabler/icons-react'
+import { ActionIcon, Anchor, Button, Menu, SegmentedControl, Text } from '@mantine/core'
+import { IconCheck, IconDots, IconDownload, IconPencil, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 import { api } from '../api/client'
-import { useCalendar, usePayments, useSave, useUtilities } from '../api/queries'
-import { EmptyState, PageHeader, QueryState, StatusBadge } from '../components/common'
-import { PaymentModal } from '../components/modals'
-import MonthCalendar from '../components/MonthCalendar'
-import { currentMonth, formatDate, formatMoney, monthLabel, shiftMonth } from '../lib/format'
+import { useDashboard, usePayments, useSave, useUtilities } from '../api/queries'
+import { QueryState } from '../components/common'
+import { LeaseModal, MarkPaidModal, PaymentModal } from '../components/modals'
+import { Panel, StatusPill, Tile } from '../components/ui'
+import { formatDate, formatMoney, ordinal } from '../lib/format'
 
-function PaymentRow({ payment, onEdit }) {
-  const markPaid = useSave(() => api.post(`/payments/${payment.id}/mark-paid/`, {}), { success: 'Marked as paid' })
+const ROW_COLUMNS = '104px minmax(0, 1fr) 120px 96px 150px'
+
+function PaymentRow({ payment, onPay, onEdit }) {
   const markUnpaid = useSave(() => api.post(`/payments/${payment.id}/mark-unpaid/`))
   const remove = useSave(() => api.delete(`/payments/${payment.id}/`), { success: 'Payment deleted' })
   const isPaid = payment.status === 'paid'
-
   return (
-    <Table.Tr>
-      <Table.Td>
-        <Group gap={6} wrap="nowrap">
-          <Text size="sm" fw={500}>{payment.display_title}</Text>
-          {payment.receipt_file && (
-            <Anchor href={payment.receipt_file.url} target="_blank" rel="noreferrer" aria-label="Receipt">
-              <IconReceipt size={16} />
-            </Anchor>
-          )}
-        </Group>
-        {payment.note && <Text size="xs" c="dimmed">{payment.note}</Text>}
-      </Table.Td>
-      <Table.Td>{formatDate(payment.due_date)}</Table.Td>
-      <Table.Td ta="right" style={{ whiteSpace: 'nowrap' }}>{formatMoney(payment.amount)}</Table.Td>
-      <Table.Td>
-        <StatusBadge status={payment.status} />
-        {isPaid && <Text size="xs" c="dimmed">{formatDate(payment.paid_on)}</Text>}
-      </Table.Td>
-      <Table.Td>
-        <Group gap={4} justify="flex-end" wrap="nowrap">
-          {!isPaid && (
-            <Button size="compact-sm" variant="light" leftSection={<IconCheck size={14} />}
-              loading={markPaid.isPending} onClick={() => markPaid.mutate()}>
-              Paid
-            </Button>
-          )}
-          <Menu position="bottom-end">
-            <Menu.Target>
-              <ActionIcon variant="subtle" color="gray" aria-label="More">
-                <IconDots size={16} />
-              </ActionIcon>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item leftSection={<IconPencil size={14} />} onClick={onEdit}>Edit</Menu.Item>
-              {isPaid && (
-                <Menu.Item leftSection={<IconX size={14} />} onClick={() => markUnpaid.mutate()}>
-                  Mark as unpaid
-                </Menu.Item>
-              )}
-              <Menu.Item
-                color="red"
-                leftSection={<IconTrash size={14} />}
-                onClick={() => window.confirm(`Delete "${payment.display_title}"?`) && remove.mutate()}
-              >
-                Delete
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-        </Group>
-      </Table.Td>
-    </Table.Tr>
+    <div className="mr-row mr-pay-row" style={{ gridTemplateColumns: ROW_COLUMNS }}>
+      <div>
+        <div className="mr-row-label">Date</div>
+        <div className="mr-row-value">{formatDate(isPaid ? payment.paid_on : payment.due_date)}</div>
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div className="mr-row-label">Payment</div>
+        <div className="mr-row-value">{payment.display_title}</div>
+      </div>
+      <div>
+        <div className="mr-row-label">Sum</div>
+        <div className="mr-row-value">{formatMoney(payment.amount)}</div>
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <div className="mr-row-label">Bill</div>
+        {payment.receipt_file ? (
+          <Anchor href={payment.receipt_file.url} target="_blank" rel="noreferrer" size="sm" fw={600}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <IconDownload size={14} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 70 }}>{payment.receipt_file.original_name}</span>
+          </Anchor>
+        ) : <div className="mr-row-value" style={{ color: 'var(--mr-muted)' }}>—</div>}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+        {isPaid ? <StatusPill status="paid" /> : (
+          <Button size="compact-sm" color={payment.status === 'overdue' ? 'red.8' : 'rose.7'} leftSection={<IconCheck size={14} />}
+            onClick={onPay}>
+            Pay
+          </Button>
+        )}
+        <Menu position="bottom-end">
+          <Menu.Target>
+            <ActionIcon variant="subtle" color="rose.7" aria-label="More"><IconDots size={16} /></ActionIcon>
+          </Menu.Target>
+          <Menu.Dropdown>
+            <Menu.Item leftSection={<IconPencil size={14} />} onClick={onEdit}>Edit</Menu.Item>
+            {isPaid && (
+              <Menu.Item leftSection={<IconX size={14} />} onClick={() => markUnpaid.mutate()}>Mark as unpaid</Menu.Item>
+            )}
+            <Menu.Item color="red" leftSection={<IconTrash size={14} />}
+              onClick={() => window.confirm(`Delete "${payment.display_title}"?`) && remove.mutate()}>
+              Delete
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      </div>
+    </div>
   )
+}
+
+const FILTERS = {
+  unpaid: (list) => list.filter((p) => p.status !== 'paid'),
+  paid: (list) => list.filter((p) => p.status === 'paid').sort((a, b) => b.paid_on.localeCompare(a.paid_on)),
+  all: (list) => list,
 }
 
 export default function PaymentsPage() {
   const { homeId } = useParams()
-  const [month, setMonth] = useState(currentMonth)
-  const payments = usePayments(homeId, month)
-  const calendar = useCalendar(homeId, month)
+  const payments = usePayments(homeId)
+  const dashboard = useDashboard(homeId)
   const utilities = useUtilities(homeId)
-  const [editing, setEditing] = useState(null) // null | 'new' | payment
+  const [filter, setFilter] = useState(null)
+  const [modal, setModal] = useState(null) // { type: 'pay' | 'edit' | 'new' | 'lease', payment? }
+  const close = () => setModal(null)
 
-  const totals = (payments.data ?? []).reduce(
-    (sum, payment) => ({
-      all: sum.all + Number(payment.amount),
-      paid: sum.paid + (payment.status === 'paid' ? Number(payment.amount) : 0),
-    }),
-    { all: 0, paid: 0 },
-  )
+  const lease = dashboard.data?.property.active_contract
+  const nextRent = dashboard.data?.next_rent
+  const firstUnpaid = (payments.data ?? []).find((p) => p.status !== 'paid')
 
   return (
-    <>
-      <PageHeader
-        title="Payments & calendar"
-        subtitle="Rent is created from your lease. Add utility bills and anything else you pay for the home."
-        actions={
-          <Button leftSection={<IconPlus size={16} />} onClick={() => setEditing('new')}>
-            Add payment
-          </Button>
-        }
-      />
-
-      <Card withBorder padding="md" mb="lg">
-        <Group justify="space-between" mb="sm">
-          <ActionIcon variant="default" onClick={() => setMonth(shiftMonth(month, -1))} aria-label="Previous month">
-            <IconChevronLeft size={18} />
-          </ActionIcon>
-          <Group gap="xs">
-            <Title order={4}>{monthLabel(month)}</Title>
-            {month !== currentMonth() && (
-              <Button size="compact-xs" variant="subtle" onClick={() => setMonth(currentMonth())}>
-                Today
-              </Button>
-            )}
-          </Group>
-          <ActionIcon variant="default" onClick={() => setMonth(shiftMonth(month, 1))} aria-label="Next month">
-            <IconChevronRight size={18} />
-          </ActionIcon>
-        </Group>
-        <MonthCalendar month={month} events={calendar.data ?? []} />
-      </Card>
-
-      <Card withBorder padding="md">
-        <Group justify="space-between" mb="sm">
-          <Title order={4}>Payments in {monthLabel(month)}</Title>
-          <Text size="sm" c="dimmed">
-            {formatMoney(totals.paid)} of {formatMoney(totals.all)} paid
-          </Text>
-        </Group>
+    <div className="mr-split">
+      <Panel
+        title="History of payments"
+        actions={payments.data?.length > 0 && (
+          <SegmentedControl size="xs" value={filter ?? (firstUnpaid ? 'unpaid' : 'paid')} onChange={setFilter}
+            data={[{ value: 'unpaid', label: 'To pay' }, { value: 'paid', label: 'History' }, { value: 'all', label: 'All' }]} />
+        )}
+      >
         <QueryState query={payments}>
-          {(list) =>
-            list.length ? (
-              <Table.ScrollContainer minWidth={640}>
-                <Table verticalSpacing="sm" highlightOnHover>
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th>Payment</Table.Th>
-                      <Table.Th>Due</Table.Th>
-                      <Table.Th ta="right">Amount</Table.Th>
-                      <Table.Th>Status</Table.Th>
-                      <Table.Th />
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {list.map((payment) => (
-                      <PaymentRow key={payment.id} payment={payment} onEdit={() => setEditing(payment)} />
-                    ))}
-                  </Table.Tbody>
-                </Table>
-              </Table.ScrollContainer>
-            ) : (
-              <EmptyState title="Nothing due this month" text="Use “Add payment” for a utility bill or a one-off cost." />
+          {(list) => {
+            if (!list.length) {
+              return (
+                <div className="mr-empty-add" style={{ cursor: 'default' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <Text fw={500} mb="sm">Make your first payment</Text>
+                    <Button leftSection={<IconPlus size={16} />} onClick={() => setModal({ type: 'new' })}>Add payment</Button>
+                  </div>
+                </div>
+              )
+            }
+            const shown = FILTERS[filter ?? (firstUnpaid ? 'unpaid' : 'paid')](list)
+            return (
+              <div className="mr-scroll">
+                {shown.length ? shown.map((payment) => (
+                  <PaymentRow key={payment.id} payment={payment}
+                    onPay={() => setModal({ type: 'pay', payment })}
+                    onEdit={() => setModal({ type: 'edit', payment })} />
+                )) : <Text c="dimmed" ta="center" py="xl">Nothing here.</Text>}
+              </div>
             )
-          }
+          }}
         </QueryState>
-      </Card>
+      </Panel>
 
-      {editing && (
-        <PaymentModal
-          homeId={Number(homeId)}
-          payment={editing === 'new' ? null : editing}
-          utilities={utilities.data ?? []}
-          opened
-          onClose={() => setEditing(null)}
-        />
+      <div className="mr-side">
+        <Tile label="Monthly payment date" value={lease ? `${ordinal(lease.rent_due_day)} of each month` : '—'}
+          onEdit={() => setModal({ type: 'lease' })} />
+        <Tile label="Payment sum" value={lease ? formatMoney(lease.monthly_rent) : '—'} onEdit={() => setModal({ type: 'lease' })} />
+        <Tile label="Next payment date" value={nextRent ? formatDate(nextRent.due_date) : '—'}
+          sub={nextRent ? nextRent.display_title : undefined} />
+        <Button size="md" disabled={!firstUnpaid} onClick={() => setModal({ type: 'pay', payment: firstUnpaid })}>
+          Make payment
+        </Button>
+        <Button size="md" color="rose.4" leftSection={<IconPlus size={16} />} onClick={() => setModal({ type: 'new' })}>
+          Add bill or other payment
+        </Button>
+      </div>
+
+      {modal?.type === 'pay' && <MarkPaidModal payment={modal.payment} opened onClose={close} />}
+      {(modal?.type === 'edit' || modal?.type === 'new') && (
+        <PaymentModal homeId={Number(homeId)} payment={modal.payment ?? null} utilities={utilities.data ?? []} opened onClose={close} />
       )}
-    </>
+      {modal?.type === 'lease' && dashboard.data && (
+        <LeaseModal homeId={Number(homeId)} lease={lease} opened onClose={close} />
+      )}
+    </div>
   )
 }

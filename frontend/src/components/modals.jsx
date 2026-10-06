@@ -1,4 +1,5 @@
 import {
+  Autocomplete,
   Button,
   Checkbox,
   FileInput,
@@ -18,7 +19,7 @@ import { IconUpload } from '@tabler/icons-react'
 
 import { api, fieldErrors } from '../api/client'
 import { uploadDocument, useSave } from '../api/queries'
-import { formatDate, isoDate, parseIso, todayIso, toApiNumber } from '../lib/format'
+import { formatDate, formatMoney, isoDate, parseIso, todayIso, toApiNumber } from '../lib/format'
 import {
   emptyLease,
   homeFromApi,
@@ -288,64 +289,106 @@ export function ReadingModal({ homeId, utility, opened, onClose }) {
   )
 }
 
-const DOCUMENT_KINDS = [
-  { value: 'condition', label: 'Condition photo' },
-  { value: 'lease', label: 'Lease' },
-  { value: 'renewal', label: 'Renewal' },
-  { value: 'receipt', label: 'Receipt' },
-  { value: 'other', label: 'Other' },
-]
+const ROOM_SUGGESTIONS = ['Kitchen', 'Living room', 'Bedroom', 'Bathroom', 'Hallway', 'Balcony']
 
-export function UploadModal({ homeId, defaultKind = 'condition', opened, onClose }) {
+/** A Before (move-in) or After (move-out) photo of one thing in one room. */
+export function ConditionPhotoModal({ homeId, stage = 'before', room = '', rooms = [], opened, onClose }) {
   const form = useForm({
-    initialValues: { kind: defaultKind, file: null, room: '', description: '', taken_on: todayIso() },
+    initialValues: { stage, file: null, room, item: '', description: '', taken_on: todayIso() },
     validate: {
-      file: (value) => (value ? null : 'Choose a file'),
-      room: (value, values) => (values.kind === 'condition' && !value.trim() ? 'Which room is this?' : null),
+      file: (value) => (value ? null : 'Choose a photo'),
+      room: (value) => (value.trim() ? null : 'Which room is this?'),
     },
   })
-  const isPhoto = form.values.kind === 'condition'
   const save = useSave(
     (values) =>
       uploadDocument({
         property: homeId,
-        kind: values.kind,
+        kind: 'condition',
         file: values.file,
-        room: isPhoto ? values.room : '',
+        room: values.room.trim(),
+        item: values.item.trim(),
+        stage: values.stage,
         description: values.description,
-        takenOn: isPhoto ? values.taken_on : '',
+        takenOn: values.taken_on,
       }),
-    { success: 'Uploaded' },
+    { success: 'Photo added' },
   )
+  const roomOptions = [...new Set([...rooms, ...ROOM_SUGGESTIONS])]
   return (
-    <Modal opened={opened} onClose={onClose} title="Upload">
+    <Modal opened={opened} onClose={onClose} title="Add new notice">
       <form onSubmit={submitWith(form, save, onClose)}>
         <Stack>
-          <Select label="Type" data={DOCUMENT_KINDS} allowDeselect={false} {...form.getInputProps('kind')} />
-          <FileInput
-            label="File"
-            description={isPhoto ? 'JPG, PNG or WEBP up to 5 MB. Location data is removed.' : 'PDF up to 10 MB or image up to 5 MB'}
-            accept={isPhoto ? IMAGE_ACCEPT : FILE_ACCEPT}
-            leftSection={<IconUpload size={16} />}
-            withAsterisk
-            clearable
-            {...form.getInputProps('file')}
+          <SegmentedControl
+            data={[{ value: 'before', label: 'Before (move-in)' }, { value: 'after', label: 'After (move-out)' }]}
+            {...form.getInputProps('stage')}
           />
-          {isPhoto && (
-            <SimpleGrid cols={2}>
-              <TextInput label="Room" placeholder="Kitchen" withAsterisk {...form.getInputProps('room')} />
-              <TextInput label="Photo taken on" type="date" {...form.getInputProps('taken_on')} />
-            </SimpleGrid>
-          )}
-          <Textarea
-            label="Description"
-            placeholder={isPhoto ? 'Scratches, stains, what is broken, what works' : 'Optional'}
-            autosize
-            minRows={2}
-            {...form.getInputProps('description')}
-          />
+          <FileInput label="Photo" description="JPG, PNG or WEBP up to 5 MB. Location data is removed."
+            accept={IMAGE_ACCEPT} leftSection={<IconUpload size={16} />} withAsterisk clearable
+            {...form.getInputProps('file')} />
+          <SimpleGrid cols={2}>
+            <Autocomplete label="Room" placeholder="Kitchen" data={roomOptions} withAsterisk
+              {...form.getInputProps('room')} />
+            <TextInput label="Item" placeholder="Sofa, table, cupboard..." {...form.getInputProps('item')} />
+          </SimpleGrid>
+          <Textarea label="What do you see?" placeholder="Stains, scratches, what is broken, what works"
+            autosize minRows={2} {...form.getInputProps('description')} />
+          <TextInput label="Photo taken on" type="date" {...form.getInputProps('taken_on')} />
         </Stack>
+        <ModalActions onClose={onClose} loading={save.isPending} label="Add" />
+      </form>
+    </Modal>
+  )
+}
+
+/** Upload (or replace) the signed lease file of the current contract. */
+export function LeaseFileModal({ lease, opened, onClose }) {
+  const form = useForm({
+    initialValues: { file: null },
+    validate: { file: (value) => (value ? null : 'Choose a file') },
+  })
+  const save = useSave(
+    async ({ file }) => {
+      const document = await uploadDocument({ property: lease.property, kind: 'lease', file })
+      return api.patch(`/contracts/${lease.id}/`, { document: document.id })
+    },
+    { success: 'Lease file uploaded' },
+  )
+  return (
+    <Modal opened={opened} onClose={onClose} title={lease.document_file ? 'Replace lease file' : 'Upload lease file'}>
+      <form onSubmit={submitWith(form, save, onClose)}>
+        <FileInput label="Signed lease" description="PDF up to 10 MB, or a photo up to 5 MB" accept={FILE_ACCEPT}
+          leftSection={<IconUpload size={16} />} withAsterisk clearable {...form.getInputProps('file')} />
         <ModalActions onClose={onClose} loading={save.isPending} label="Upload" />
+      </form>
+    </Modal>
+  )
+}
+
+/** "Make payment": record that a payment was made, with an optional receipt. No money is transferred. */
+export function MarkPaidModal({ payment, opened, onClose }) {
+  const form = useForm({ initialValues: { paid_on: todayIso(), receipt: null } })
+  const save = useSave(
+    async ({ paid_on, receipt }) => {
+      const payload = { paid_on }
+      if (receipt) payload.receipt = (await uploadDocument({ property: payment.property, kind: 'receipt', file: receipt })).id
+      return api.post(`/payments/${payment.id}/mark-paid/`, payload)
+    },
+    { success: 'Payment recorded' },
+  )
+  return (
+    <Modal opened={opened} onClose={onClose} title="Make payment">
+      <form onSubmit={submitWith(form, save, onClose)}>
+        <Stack>
+          <Text size="sm">
+            {payment.display_title} · {formatMoney(payment.amount)} · due {formatDate(payment.due_date)}
+          </Text>
+          <TextInput label="Paid on" type="date" {...form.getInputProps('paid_on')} />
+          <FileInput label="Receipt or bank screenshot" description="Optional. PDF or photo." accept={FILE_ACCEPT}
+            leftSection={<IconUpload size={16} />} clearable {...form.getInputProps('receipt')} />
+          <Text size="xs" c="dimmed">MyRent only records the payment; it does not send money.</Text>
+        </Stack>
+        <ModalActions onClose={onClose} loading={save.isPending} label="Mark as paid" />
       </form>
     </Modal>
   )

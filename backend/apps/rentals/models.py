@@ -89,6 +89,10 @@ class Document(models.Model):
         METER = 'meter', 'Meter photo'
         OTHER = 'other', 'Other'
 
+    class Stage(models.TextChoices):
+        BEFORE = 'before', 'Before (move-in)'
+        AFTER = 'after', 'After (move-out)'
+
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='documents')
     kind = models.CharField(max_length=CHOICE_MAX_LENGTH, choices=Kind.choices, default=Kind.OTHER)
     file = models.FileField(upload_to=document_upload_to, max_length=255)
@@ -96,6 +100,13 @@ class Document(models.Model):
     content_type = models.CharField(max_length=SHORT_NAME_MAX_LENGTH)
     size = models.PositiveIntegerField(help_text='Bytes')
     room = models.CharField(max_length=SHORT_NAME_MAX_LENGTH, blank=True, help_text='Condition photos: which room.')
+    item = models.CharField(max_length=SHORT_NAME_MAX_LENGTH, blank=True, help_text='Condition photos: sofa, table...')
+    stage = models.CharField(
+        max_length=CHOICE_MAX_LENGTH,
+        choices=Stage.choices,
+        default=Stage.BEFORE,
+        help_text='Condition photos: taken at move-in (before) or at move-out (after).',
+    )
     description = models.TextField(blank=True)
     taken_on = models.DateField(null=True, blank=True, help_text='Condition photos: when the photo was taken.')
     uploaded_at = models.DateTimeField(auto_now_add=True)

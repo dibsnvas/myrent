@@ -1,266 +1,134 @@
-import { Anchor, Badge, Button, Card, Group, Progress, SimpleGrid, Stack, Text, Title } from '@mantine/core'
-import {
-  IconBolt,
-  IconCalendarDue,
-  IconFileText,
-  IconMail,
-  IconPencil,
-  IconPhone,
-  IconPlus,
-  IconRefresh,
-} from '@tabler/icons-react'
+import { ActionIcon, Anchor, Button, Group, Stack, Text, Tooltip } from '@mantine/core'
+import { IconPencil, IconPlus, IconSettings } from '@tabler/icons-react'
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 
 import { useDashboard } from '../api/queries'
-import { EmptyState, PageHeader, QueryState, ReminderList } from '../components/common'
-import { EditHomeModal, LeaseModal, RenewModal } from '../components/modals'
-import { formatDate, formatMoney, relativeDays } from '../lib/format'
+import { QueryState } from '../components/common'
+import { EditHomeModal, LeaseModal } from '../components/modals'
+import { Panel, StatusPill, Tile } from '../components/ui'
+import { formatDate, formatMoney, longDate, relativeDays } from '../lib/format'
 
-function StatCard({ label, value, hint, color }) {
+function UpcomingTile({ base, upcoming, reminders }) {
+  const other = reminders.filter((reminder) => !reminder.key.startsWith('payment:'))
   return (
-    <Card withBorder padding="lg">
-      <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-        {label}
-      </Text>
-      <Text fz={26} fw={700} c={color} mt={4}>
-        {value}
-      </Text>
-      {hint}
-    </Card>
-  )
-}
-
-function LeaseCard({ homeId, lease, onAdd, onEdit, onRenew }) {
-  if (!lease) {
-    return (
-      <Card withBorder padding="lg">
-        <EmptyState
-          icon={IconFileText}
-          title="No lease yet"
-          text="Add the lease dates and rent to get a payment calendar and reminders."
-          action={<Button leftSection={<IconPlus size={16} />} onClick={onAdd}>Add lease</Button>}
-        />
-      </Card>
-    )
-  }
-  const rows = [
-    ['Period', `${formatDate(lease.start_date)} – ${formatDate(lease.end_date)}`],
-    ['Monthly rent', formatMoney(lease.monthly_rent)],
-    ['Rent due', `Day ${lease.rent_due_day} of each month`],
-    ['Deposit', formatMoney(lease.deposit)],
-  ]
-  return (
-    <Card withBorder padding="lg">
-      <Group justify="space-between" mb="sm">
-        <Group gap="xs">
-          <Title order={4}>Lease</Title>
-          {lease.is_expired && <Badge color="red" variant="light">Ended</Badge>}
-          {lease.previous && <Badge variant="light">Renewal</Badge>}
-        </Group>
-        <Group gap="xs">
-          <Button size="xs" variant="default" leftSection={<IconPencil size={14} />} onClick={onEdit}>
-            Edit
-          </Button>
-          <Button size="xs" variant="light" leftSection={<IconRefresh size={14} />} onClick={onRenew}>
-            Renew
-          </Button>
-        </Group>
-      </Group>
-      <Stack gap={6}>
-        {rows.map(([label, value]) => (
-          <Group key={label} justify="space-between" gap="xs">
-            <Text size="sm" c="dimmed">{label}</Text>
-            <Text size="sm" fw={500}>{value}</Text>
+    <Tile label="Upcoming payments" to={`${base}/calendar`} className="mr-dash-wide">
+      <Stack gap={8} mt="sm">
+        {upcoming.length === 0 && other.length === 0 && (
+          <Text size="sm" c="dimmed">Nothing due. Add your lease or bills to see what is coming.</Text>
+        )}
+        {upcoming.map((payment) => (
+          <Group key={payment.id} justify="space-between" wrap="nowrap" gap="xs">
+            <div style={{ minWidth: 0 }}>
+              <Text size="sm" fw={600} truncate>{payment.display_title}</Text>
+              <Text size="xs" c="dimmed">{formatDate(payment.due_date)} · {relativeDays(payment.due_date)}</Text>
+            </div>
+            <Group gap="xs" wrap="nowrap">
+              <Text size="sm" fw={600}>{formatMoney(payment.amount)}</Text>
+              <StatusPill status={payment.status} />
+            </Group>
           </Group>
         ))}
-        {lease.terms && (
-          <Text size="sm" mt="xs" style={{ whiteSpace: 'pre-line' }}>
-            {lease.terms}
-          </Text>
-        )}
-        <Group justify="space-between" mt="xs">
-          {lease.document_file ? (
-            <Anchor href={lease.document_file.url} target="_blank" rel="noreferrer" size="sm">
-              <Group gap={4}>
-                <IconFileText size={16} />
-                {lease.document_file.original_name}
-              </Group>
-            </Anchor>
-          ) : (
-            <Text size="sm" c="dimmed">No lease file uploaded</Text>
-          )}
-          <Anchor component={Link} to={`/homes/${homeId}/documents`} size="sm">
-            All documents
-          </Anchor>
-        </Group>
+        {other.map((reminder) => (
+          <Group key={reminder.key} justify="space-between" wrap="nowrap" gap="xs">
+            <Text size="sm" fw={600} c={reminder.level === 'overdue' ? 'var(--mr-danger)' : undefined}>
+              {reminder.title}
+            </Text>
+            <Text size="xs" c="dimmed">{formatDate(reminder.date)}</Text>
+          </Group>
+        ))}
       </Stack>
-    </Card>
+    </Tile>
   )
 }
 
-function LandlordCard({ home, onEdit }) {
-  const hasContacts = home.landlord_name || home.landlord_phone || home.landlord_email
+function PhotoTile({ base, photos }) {
+  const [index, setIndex] = useState(0)
+  const photo = photos[index]
   return (
-    <Card withBorder padding="lg">
-      <Group justify="space-between" mb="sm">
-        <Title order={4}>Landlord</Title>
-        <Button size="xs" variant="default" leftSection={<IconPencil size={14} />} onClick={onEdit}>
-          Edit
-        </Button>
-      </Group>
-      {hasContacts ? (
-        <Stack gap={6}>
-          {home.landlord_name && <Text fw={500}>{home.landlord_name}</Text>}
-          {home.landlord_phone && (
-            <Anchor href={`tel:${home.landlord_phone.replace(/\s/g, '')}`} size="sm">
-              <Group gap={6}><IconPhone size={16} />{home.landlord_phone}</Group>
-            </Anchor>
-          )}
-          {home.landlord_email && (
-            <Anchor href={`mailto:${home.landlord_email}`} size="sm">
-              <Group gap={6}><IconMail size={16} />{home.landlord_email}</Group>
-            </Anchor>
-          )}
-        </Stack>
+    <Tile label="Move-in photos" value={photo ? photo.room : undefined} to={`${base}/condition`}>
+      {photo ? (
+        <>
+          <a href={photo.url} target="_blank" rel="noreferrer">
+            <img src={photo.url} alt={`${photo.room} ${photo.item}`}
+              style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 14, marginTop: 10, display: 'block' }} />
+          </a>
+          <Group justify="center" gap={6} mt={8}>
+            {photos.map((item, dot) => (
+              <button key={item.id} type="button" aria-label={`Photo ${dot + 1}`} onClick={() => setIndex(dot)}
+                style={{ width: 7, height: 7, borderRadius: '50%', border: 'none', padding: 0, cursor: 'pointer',
+                  background: dot === index ? 'var(--mr-dark)' : 'var(--mr-muted)' }} />
+            ))}
+          </Group>
+        </>
       ) : (
-        <Text size="sm" c="dimmed">No contacts saved.</Text>
+        <Text size="sm" c="dimmed" mt="sm">No photos yet. Photograph every room at move-in.</Text>
       )}
-      {home.notes && (
-        <Text size="sm" mt="md" c="dimmed" style={{ whiteSpace: 'pre-line' }}>
-          {home.notes}
-        </Text>
-      )}
-    </Card>
-  )
-}
-
-function UtilitiesCard({ homeId, utilities }) {
-  return (
-    <Card withBorder padding="lg">
-      <Group justify="space-between" mb="sm">
-        <Title order={4}>Meters</Title>
-        <Anchor component={Link} to={`/homes/${homeId}/utilities`} size="sm">
-          Utilities & meters
-        </Anchor>
-      </Group>
-      {utilities.length ? (
-        <Stack gap={6}>
-          {utilities.map((utility) => (
-            <Group key={utility.id} justify="space-between" gap="xs">
-              <Group gap={6}>
-                <IconBolt size={16} color="var(--mantine-color-gray-6)" />
-                <Text size="sm">{utility.name}</Text>
-              </Group>
-              <Text size="sm" c={utility.last_reading ? undefined : 'dimmed'}>
-                {!utility.has_meter
-                  ? 'No meter'
-                  : utility.last_reading
-                    ? `${Number(utility.last_reading.value)} ${utility.unit} · ${formatDate(utility.last_reading.reading_date)}`
-                    : 'No readings yet'}
-              </Text>
-            </Group>
-          ))}
-        </Stack>
-      ) : (
-        <Text size="sm" c="dimmed">
-          Add electricity, water, internet... to track bills and meter readings.
-        </Text>
-      )}
-    </Card>
+    </Tile>
   )
 }
 
 export default function DashboardPage() {
   const { homeId } = useParams()
   const dashboard = useDashboard(homeId)
-  const [modal, setModal] = useState(null) // 'home' | 'lease-add' | 'lease-edit' | 'renew'
+  const [modal, setModal] = useState(null) // 'home' | 'lease'
   const close = () => setModal(null)
+  const base = `/homes/${homeId}`
 
   return (
     <QueryState query={dashboard}>
       {(data) => {
-        const { property: home, next_rent: nextRent, overdue, this_month: month } = data
+        const home = data.property
         const lease = home.active_contract
-        const paidShare = Number(month.total) ? (Number(month.paid) / Number(month.total)) * 100 : 0
+        const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(home.address)}`
         return (
-          <>
-            <PageHeader
-              title={home.title}
-              subtitle={home.address}
-              actions={
-                <Button variant="default" leftSection={<IconPencil size={16} />} onClick={() => setModal('home')}>
-                  Edit home
-                </Button>
-              }
-            />
-            <ReminderList reminders={data.reminders} />
-
-            <SimpleGrid cols={{ base: 1, sm: 3 }} mb="lg">
-              <StatCard
-                label="Next rent"
-                value={nextRent ? formatMoney(nextRent.amount) : '—'}
-                hint={
-                  <Group gap={6} mt={4}>
-                    <IconCalendarDue size={16} color="var(--mantine-color-gray-6)" />
-                    <Text size="sm" c="dimmed">
-                      {nextRent ? `${formatDate(nextRent.due_date)}, ${relativeDays(nextRent.due_date)}` : 'No upcoming rent'}
-                    </Text>
-                  </Group>
-                }
-              />
-              <StatCard
-                label="Overdue"
-                value={overdue.count ? formatMoney(overdue.total) : 'Nothing'}
-                color={overdue.count ? 'red' : 'teal'}
-                hint={
-                  <Text size="sm" c="dimmed" mt={4}>
-                    {overdue.count ? `${overdue.count} unpaid ${overdue.count === 1 ? 'payment' : 'payments'}` : 'All paid on time'}
-                  </Text>
-                }
-              />
-              <StatCard
-                label="This month"
-                value={formatMoney(month.total)}
-                hint={
-                  <Stack gap={6} mt={6}>
-                    <Progress value={paidShare} size="sm" />
-                    <Text size="sm" c="dimmed">
-                      {formatMoney(month.paid)} paid · {formatMoney(month.unpaid)} left
-                    </Text>
-                  </Stack>
-                }
-              />
-            </SimpleGrid>
-
-            <SimpleGrid cols={{ base: 1, md: 2 }}>
-              <LeaseCard
-                homeId={homeId}
-                lease={lease}
-                onAdd={() => setModal('lease-add')}
-                onEdit={() => setModal('lease-edit')}
-                onRenew={() => setModal('renew')}
-              />
-              <Stack>
-                <LandlordCard home={home} onEdit={() => setModal('home')} />
-                <UtilitiesCard homeId={homeId} utilities={data.utilities} />
-              </Stack>
-            </SimpleGrid>
-
-            <Group mt="lg" gap="xs">
-              <Button component={Link} to={`/homes/${homeId}/payments`} variant="light">
-                Payments & calendar
-              </Button>
-              <Button component={Link} to={`/homes/${homeId}/documents`} variant="light">
-                {data.documents.condition} condition photos · {data.documents.total} files
-              </Button>
-            </Group>
-
+          <Panel>
+            {!lease && (
+              <Group justify="space-between" mb="md" p="md" style={{ background: 'var(--mr-bg)', borderRadius: 20 }}>
+                <Text size="sm">Add your lease dates and rent: MyRent then builds your payment schedule and reminders.</Text>
+                <Button size="xs" leftSection={<IconPlus size={14} />} onClick={() => setModal('lease')}>Add lease</Button>
+              </Group>
+            )}
+            <div className="mr-dash">
+              <Tile label="Apartment location" value={home.address} sub={home.title} tone="dark"
+                to={`${base}/contract`} className="mr-dash-location">
+                <div className="mr-map" />
+                <Anchor href={mapUrl} target="_blank" rel="noreferrer" size="xs" c="var(--mr-bg)" mt={6} display="inline-block">
+                  Open on the map
+                </Anchor>
+              </Tile>
+              <Tile label="Monthly payment date" value={data.next_rent ? longDate(data.next_rent.due_date) : '—'}
+                sub={data.next_rent ? relativeDays(data.next_rent.due_date) : 'No upcoming rent'} to={`${base}/payments`} />
+              <Tile label="Payment date for utilities"
+                value={data.next_utility_bill ? longDate(data.next_utility_bill.due_date) : '—'}
+                sub={data.next_utility_bill ? data.next_utility_bill.display_title : 'No unpaid bills'}
+                to={`${base}/utilities`} />
+              <div className="mr-dash-tools">
+                <Tooltip label="Edit home and landlord">
+                  <ActionIcon variant="outline" color="rose.7" radius="xl" size="lg" onClick={() => setModal('home')}
+                    aria-label="Edit home and landlord">
+                    <IconSettings size={18} />
+                  </ActionIcon>
+                </Tooltip>
+                <Tooltip label={lease ? 'Edit lease' : 'Add lease'}>
+                  <ActionIcon variant="outline" color="rose.7" radius="xl" size="lg" onClick={() => setModal('lease')}
+                    aria-label={lease ? 'Edit lease' : 'Add lease'}>
+                    <IconPencil size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              </div>
+              <Tile label="Monthly payment amount" value={lease ? formatMoney(lease.monthly_rent) : '—'}
+                sub={data.overdue.count ? `${formatMoney(data.overdue.total)} overdue` : 'Nothing overdue'}
+                to={`${base}/contract`} />
+              <Tile label="Average utility bill"
+                value={data.average_utility_bill ? formatMoney(data.average_utility_bill) : '—'}
+                sub="per month, last 3 months" to={`${base}/utilities`} />
+              <UpcomingTile base={base} upcoming={data.upcoming} reminders={data.reminders} />
+              <PhotoTile base={base} photos={data.recent_photos} />
+            </div>
             {modal === 'home' && <EditHomeModal home={home} opened onClose={close} />}
-            {modal === 'lease-add' && <LeaseModal homeId={home.id} opened onClose={close} />}
-            {modal === 'lease-edit' && <LeaseModal homeId={home.id} lease={lease} opened onClose={close} />}
-            {modal === 'renew' && <RenewModal lease={lease} opened onClose={close} />}
-          </>
+            {modal === 'lease' && <LeaseModal homeId={home.id} lease={lease} opened onClose={close} />}
+          </Panel>
         )
       }}
     </QueryState>

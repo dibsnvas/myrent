@@ -1,30 +1,15 @@
-import { Group, Text } from '@mantine/core'
-
 import { formatMoney, isoDate, todayIso } from '../lib/format'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
-function eventStyle(event) {
-  if (event.kind === 'meter_reading') return { background: 'var(--mantine-color-violet-1)', color: 'var(--mantine-color-violet-9)' }
-  if (event.kind === 'contract_end') return { background: 'var(--mantine-color-orange-1)', color: 'var(--mantine-color-orange-9)' }
-  const palette = { paid: 'teal', overdue: 'red', due: 'blue' }[event.status] ?? 'gray'
-  return { background: `var(--mantine-color-${palette}-1)`, color: `var(--mantine-color-${palette}-9)` }
-}
-
-const LEGEND = [
-  { label: 'Due', style: eventStyle({ kind: 'payment', status: 'due' }) },
-  { label: 'Paid', style: eventStyle({ kind: 'payment', status: 'paid' }) },
-  { label: 'Overdue', style: eventStyle({ kind: 'payment', status: 'overdue' }) },
-  { label: 'Meter readings', style: eventStyle({ kind: 'meter_reading' }) },
-  { label: 'Lease ends', style: eventStyle({ kind: 'contract_end' }) },
-]
-
-/** Month grid, Monday first. `month` is 'YYYY-MM'; events come from /api/calendar/. */
+/** Month grid, Monday first, with the neighbouring months' days greyed out. `month` is 'YYYY-MM'. */
 export default function MonthCalendar({ month, events }) {
   const [year, monthNumber] = month.split('-').map(Number)
   const first = new Date(year, monthNumber - 1, 1)
-  const leadingBlanks = (first.getDay() + 6) % 7
+  const start = new Date(first)
+  start.setDate(1 - ((first.getDay() + 6) % 7))
   const daysInMonth = new Date(year, monthNumber, 0).getDate()
+  const cellCount = Math.ceil(((first.getDay() + 6) % 7 + daysInMonth) / 7) * 7
   const today = todayIso()
 
   const byDate = events.reduce((groups, event) => {
@@ -32,56 +17,36 @@ export default function MonthCalendar({ month, events }) {
     return groups
   }, {})
 
-  const cells = [
-    ...Array.from({ length: leadingBlanks }, (_, index) => ({ key: `blank-${index}` })),
-    ...Array.from({ length: daysInMonth }, (_, index) => {
-      const iso = isoDate(new Date(year, monthNumber - 1, index + 1))
-      return { key: iso, iso, day: index + 1 }
-    }),
-  ]
+  const cells = Array.from({ length: cellCount }, (_, index) => {
+    const date = new Date(start)
+    date.setDate(start.getDate() + index)
+    return { iso: isoDate(date), day: date.getDate(), outside: date.getMonth() !== monthNumber - 1 }
+  })
 
   return (
-    <div>
-      <div className="calendar-grid" style={{ marginBottom: 4 }}>
+    <div className="mr-cal">
+      <div className="mr-cal-grid">
         {WEEKDAYS.map((weekday) => (
-          <Text key={weekday} size="xs" c="dimmed" ta="center" fw={600}>
-            {weekday}
-          </Text>
+          <div key={weekday} className="mr-cal-head">{weekday}</div>
+        ))}
+        {cells.map((cell) => (
+          <div key={cell.iso} className="mr-cal-day" data-outside={cell.outside || undefined}
+            data-today={cell.iso === today || undefined}>
+            <span className="mr-cal-num">{cell.day}</span>
+            {!cell.outside && (byDate[cell.iso] ?? []).map((event) => (
+              <span
+                key={`${event.kind}-${event.object_id ?? event.property_id}`}
+                className="mr-cal-event"
+                data-kind={event.kind}
+                data-status={event.status || undefined}
+                title={`${event.title}${event.amount ? ` · ${formatMoney(event.amount)}` : ''}`}
+              >
+                {event.title}
+              </span>
+            ))}
+          </div>
         ))}
       </div>
-      <div className="calendar-grid">
-        {cells.map((cell) =>
-          cell.iso ? (
-            <div key={cell.key} className="calendar-day" data-today={cell.iso === today || undefined}>
-              <Text size="xs" fw={cell.iso === today ? 700 : 500}>
-                {cell.day}
-              </Text>
-              {(byDate[cell.iso] ?? []).map((event) => (
-                <span
-                  key={`${event.kind}-${event.object_id ?? event.property_id}`}
-                  className="calendar-event"
-                  style={eventStyle(event)}
-                  title={`${event.title}${event.amount ? ` · ${formatMoney(event.amount)}` : ''}`}
-                >
-                  {event.title}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <div key={cell.key} className="calendar-day" data-outside />
-          ),
-        )}
-      </div>
-      <Group gap="md" mt="sm">
-        {LEGEND.map(({ label, style }) => (
-          <Group key={label} gap={6}>
-            <span style={{ ...style, width: 10, height: 10, borderRadius: 3, display: 'inline-block' }} />
-            <Text size="xs" c="dimmed">
-              {label}
-            </Text>
-          </Group>
-        ))}
-      </Group>
     </div>
   )
 }

@@ -22,7 +22,7 @@ Live: https://myrent-kbtu.vercel.app (frontend) · https://myrent-api-cjsp.onren
 | Utility and meter records | Utility categories (add/delete), bills, meter readings with consumption |
 | Contract renewal | "Renew" creates a new lease linked to the old one. History and paid rent stay |
 | Calendar and reminders | Month calendar plus a reminders banner (overdue, due in 3 days, meter day, lease ending). Daily email digest |
-| Condition photo log | Dated photos per room with descriptions. Location data stripped on upload |
+| Condition photo log | Housing gallery: Before (move-in) and After (move-out) photos per room and item, with notes. Location data stripped on upload |
 
 Not in v1 (Should/Could): contract amendments, maintenance issue log, monthly expense summary,
 AI contract assistant, landlord accounts.
@@ -40,7 +40,8 @@ backend/                Django 5.2 LTS, same conventions as blog-api
   settings/             base.py + env/local.py (SQLite) + env/prod.py (Supabase, S3, Resend)
 frontend/               React 19 + Vite, Mantine UI, TanStack Query, React Router
   src/api/              axios client (JWT refresh), query hooks
-  src/pages/            Login, Register, NewHome (wizard), Dashboard, Payments, Utilities, Documents, Account
+  src/pages/            Login, Register, NewHome (wizard), Dashboard, Contract, Payments, Utilities, Calendar,
+                        Condition (housing gallery), Account, Help: layout from Karina's Figma (palette in src/styles.css)
 render.yaml             Render Blueprint for the API
 .github/workflows/      daily reminder cron
 ```
@@ -113,6 +114,14 @@ Free-tier facts that shaped this setup:
   That is enough for the demo week. For longer, move to Supabase: set the `MYRENT_DB_*` values and
   `MYRENT_FILE_STORAGE=s3` with the `MYRENT_S3_*` values (see `settings/.env.example`).
 - **Render's free tier blocks SMTP ports**, so email goes through Resend's HTTP API.
+
+## Design
+
+The UI follows the team's Figma file (MyRent, by Karina): Inter, the dusty-rose / creamy palette, a rounded
+sidebar and top bar, tiles with a corner arrow. Colours are CSS variables at the top of `frontend/src/styles.css`.
+The login background photo is not in the repo: put it at `frontend/public/login-bg.jpg` and it is used
+automatically (until then a sunset gradient is shown). Repair requests from the Figma are a Should story (R2)
+and are not built yet.
 
 ## Design decisions
 

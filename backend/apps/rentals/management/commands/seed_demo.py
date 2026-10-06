@@ -29,10 +29,12 @@ RENT = Decimal('250000')
 RENT_DUE_DAY = 5
 METER_DAY = 25
 BILL_DUE_DAY = 20
+# (room, item, note, colour): move-in photos for the Housing condition gallery
 CONDITION_ROOMS = (
-    ('Kitchen', 'Small scratch on the worktop left of the sink. Oven and hob work.', (214, 196, 168)),
-    ('Bathroom', 'Crack in one wall tile above the bath. Tap drips slightly.', (176, 205, 214)),
-    ('Living room', 'Sofa in good condition. Stain on the carpet near the balcony door.', (196, 214, 176)),
+    ('Kitchen', 'Cupboard', 'The handle is slightly broken and there are scratches.', (214, 196, 168)),
+    ('Kitchen', 'Table', 'Stains and scratches; one leg is wobbly.', (222, 208, 186)),
+    ('Bathroom', 'Tiles', 'Crack in one wall tile above the bath. Tap drips slightly.', (176, 205, 214)),
+    ('Living room', 'Sofa', 'Good condition, small stains on the left cushion.', (196, 214, 176)),
 )
 
 
@@ -146,10 +148,10 @@ class Command(BaseCommand):
                     paid_on=bill_due - timedelta(days=2) if bill_due < today else None,
                 )
 
-        for room, description, colour in CONDITION_ROOMS:
+        for room, item, description, colour in CONDITION_ROOMS:
             _document(
-                prop, Document.Kind.CONDITION, f'{room.lower().replace(" ", "-")}.jpg', _image(room, colour),
-                'image/jpeg', room=room, description=description, taken_on=start,
+                prop, Document.Kind.CONDITION, f'{item.lower()}.jpg', _image(f'{room}: {item}', colour),
+                'image/jpeg', room=room, item=item, description=description, taken_on=start,
             )
 
         self.stdout.write(self.style.SUCCESS(

@@ -76,3 +76,16 @@ class DashboardTests(RentalsTestCase):
         self.assertEqual(data['next_rent']['due_date'], '2026-10-01')
         self.assertEqual(data['this_month']['unpaid'], '200000.00')
         self.assertIsNotNone(data['property']['active_contract'])
+        self.assertEqual([p['due_date'] for p in data['upcoming']][:2], ['2026-09-01', '2026-10-01'])
+        self.assertIsNone(data['average_utility_bill'])
+        self.assertIsNone(data['next_utility_bill'])
+
+    def test_dashboard_utility_figures(self, _today) -> None:
+        power = Utility.objects.create(property=self.home, name='Electricity', has_meter=True)
+        for due, amount in ((date(2026, 7, 20), 6000), (date(2026, 8, 20), 8000), (date(2026, 9, 20), 7000),
+                            (date(2026, 9, 25), 3000), (date(2026, 10, 20), 9000)):
+            Payment.objects.create(property=self.home, kind='utility', utility=power, amount=amount, due_date=due)
+        data = self.client.get(reverse('property-dashboard', args=[self.home.id])).data
+        # last three months with bills up to today: Jul 6000, Aug 8000, Sep 7000 + 3000
+        self.assertEqual(data['average_utility_bill'], '8000.00')
+        self.assertEqual(data['next_utility_bill']['due_date'], '2026-10-20')

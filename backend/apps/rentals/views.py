@@ -20,6 +20,7 @@ from django.db.models import Count, Q, Sum
 from django.http import FileResponse, HttpRequest
 from django.utils import timezone
 from django.utils.crypto import constant_time_compare
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_GET
 
 from apps.rentals.models import Contract, Document, MeterReading, Payment, Property, Utility
@@ -86,6 +87,24 @@ class PropertyViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
         return Response(_dashboard(prop, request))
 
 
+UPCOMING_PAYMENTS = 5
+RECENT_PHOTOS = 4
+AVERAGE_BILL_MONTHS = 3
+
+
+def _average_monthly_bill(utility_bills, today: date) -> str | None:
+    """Average of the monthly utility totals over the last few months that have bills (None if there are none)."""
+    months = (
+        utility_bills.filter(due_date__lte=today)
+        .order_by()
+        .values_list('due_date__year', 'due_date__month')
+        .annotate(total=Sum('amount'))
+        .order_by('-due_date__year', '-due_date__month')[:AVERAGE_BILL_MONTHS]
+    )
+    totals = [total for _year, _month, total in months]
+    return _money(sum(totals, Decimal(0)) / len(totals)) if totals else None
+
+
 def _dashboard(prop: Property, request: Request) -> dict[str, Any]:
     today = timezone.localdate()
     context = {'request': request}
@@ -97,6 +116,14 @@ def _dashboard(prop: Property, request: Request) -> dict[str, Any]:
         total=Sum('amount'), paid=Sum('amount', filter=Q(paid_on__isnull=False))
     )
     documents = dict(prop.documents.order_by().values_list('kind').annotate(count=Count('id')))
+    utility_bills = prop.payments.filter(kind=Payment.Kind.UTILITY)
+    next_utility_bill = (
+        utility_bills.filter(paid_on__isnull=True, due_date__gte=today).select_related('utility').first()
+    )
+    upcoming = unpaid.select_related('utility', 'receipt').order_by('due_date', 'id')[:UPCOMING_PAYMENTS]
+    recent_photos = prop.documents.filter(kind=Document.Kind.CONDITION).order_by('-taken_on', '-uploaded_at')[
+        :RECENT_PHOTOS
+    ]
     return {
         'property': PropertySerializer(prop, context=context).data,
         'next_rent': PaymentSerializer(next_rent, context=context).data if next_rent else None,
@@ -107,6 +134,10 @@ def _dashboard(prop: Property, request: Request) -> dict[str, Any]:
             'paid': _money(this_month['paid']),
             'unpaid': _money((this_month['total'] or 0) - (this_month['paid'] or 0)),
         },
+        'next_utility_bill': PaymentSerializer(next_utility_bill, context=context).data if next_utility_bill else None,
+        'average_utility_bill': _average_monthly_bill(utility_bills, today),
+        'upcoming': PaymentSerializer(upcoming, many=True, context=context).data,
+        'recent_photos': DocumentSerializer(recent_photos, many=True, context=context).data,
         'utilities': UtilitySerializer(prop.utilities.all(), many=True, context=context).data,
         'reminders': ReminderSerializer(reminders_for(prop.owner, today, property_id=prop.id), many=True).data,
         'documents': {kind: documents.get(kind, 0) for kind in Document.Kind.values} | {
@@ -269,6 +300,7 @@ class SendRemindersView(APIView):
 
 
 @require_GET
+@xframe_options_exempt
 def document_file(request: HttpRequest, token: str) -> FileResponse:
     """Stream a stored file. The signed token in the URL is the permission check."""
     document = document_for_token(token)
@@ -278,4 +310,7 @@ def document_file(request: HttpRequest, token: str) -> FileResponse:
         filename=document.original_name,
     )
     response['Cache-Control'] = 'private, max-age=600'
+    # The lease PDF preview embeds this file; only the MyRent frontend may frame it.
+    frame_origins = ' '.join(dict.fromkeys([settings.FRONTEND_URL, *settings.CORS_ALLOWED_ORIGINS]))
+    response['Content-Security-Policy'] = f"frame-ancestors 'self' {frame_origins}".strip()
     return response

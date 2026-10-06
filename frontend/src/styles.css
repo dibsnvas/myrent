@@ -1,57 +1,730 @@
+/* MyRent design system, from Karina's Figma style sheet. */
+:root {
+  --mr-dark: #574344; /* dark dusty rose 1: highlighted text, dark buttons and cards */
+  --mr-dark-2: #765c5d; /* dark dusty rose 2: second dark surface, icons */
+  --mr-mid: #8b7071; /* light dusty rose 1: body text */
+  --mr-muted: #a79797; /* light dusty rose 2: labels, inactive menu */
+  --mr-panel: #ded8cc; /* dark creamy: sidebar, top bar, panels */
+  --mr-bg: #fdfdf1; /* light creamy: page background, cards, inputs */
+  --mr-danger: #a14b45; /* overdue (not in the palette; kept muted to fit it) */
+  --mr-radius-xl: 28px;
+  --mr-radius: 20px;
+}
+
 body {
-  background: var(--mantine-color-gray-0);
+  background: var(--mr-bg);
+  color: var(--mr-dark);
 }
 
-.calendar-grid {
+a {
+  color: inherit;
+}
+
+/* ---------- Mantine inputs in the Figma style: cream pills on creamy panels ---------- */
+.mantine-Input-input {
+  background-color: var(--mr-bg);
+  border-color: transparent;
+  color: var(--mr-dark);
+}
+
+.mantine-Input-input:focus,
+.mantine-Input-input:focus-within {
+  border-color: var(--mr-dark-2);
+}
+
+.mantine-Input-input::placeholder,
+.mantine-PasswordInput-innerInput::placeholder {
+  color: var(--mr-muted);
+}
+
+.mantine-PasswordInput-innerInput {
+  font-size: var(--mantine-font-size-sm);
+}
+
+.mantine-InputWrapper-label {
+  color: var(--mr-mid);
+  font-weight: 500;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.mantine-Modal-content,
+.mantine-Modal-header {
+  background-color: var(--mr-panel);
+}
+
+.mantine-Modal-title {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* ---------- App shell ---------- */
+.mr-shell {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 20px;
+  padding: 20px;
+  min-height: 100vh;
 }
 
-.calendar-day {
-  min-height: 92px;
-  padding: 6px;
-  border-radius: var(--mantine-radius-sm);
-  background: var(--mantine-color-white);
-  border: 1px solid var(--mantine-color-gray-2);
+.mr-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.mr-sidebar {
+  background: var(--mr-panel);
+  border-radius: var(--mr-radius-xl);
+  padding: 28px 0 20px;
+  position: sticky;
+  top: 20px;
+  height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.mr-logo {
+  text-align: center;
+  margin-bottom: 22px;
+  text-decoration: none;
+  display: block;
+}
+
+.mr-logo-name {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--mr-dark);
+  line-height: 1.1;
+}
+
+.mr-logo-tag {
+  font-size: 11px;
+  color: var(--mr-muted);
+  margin-top: 2px;
+}
+
+.mr-nav-label {
+  font-size: 12px;
+  color: var(--mr-muted);
+  padding: 10px 24px 6px;
+}
+
+.mr-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 24px;
+  color: var(--mr-muted);
+  font-size: 14px;
+  font-weight: 500;
+  position: relative;
+  text-decoration: none;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mr-nav-item:hover {
+  color: var(--mr-dark-2);
+}
+
+.mr-nav-item[data-active] {
+  color: var(--mr-dark);
+  font-weight: 600;
+}
+
+.mr-nav-item[data-active]::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 6px;
+  border-radius: 0 6px 6px 0;
+  background: var(--mr-dark);
+}
+
+.mr-topbar {
+  background: var(--mr-panel);
+  border-radius: var(--mr-radius-xl);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.mr-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  min-width: 0;
+}
+
+/* ---------- Panels and tiles ---------- */
+.mr-panel {
+  background: var(--mr-panel);
+  border-radius: var(--mr-radius-xl);
+  padding: 24px;
+  min-width: 0;
+}
+
+.mr-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.mr-panel-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--mr-dark-2);
+  margin: 0;
+}
+
+.mr-tile {
+  background: var(--mr-bg);
+  border-radius: var(--mr-radius);
+  padding: 16px 18px;
+  position: relative;
+  min-width: 0;
+  color: var(--mr-dark);
+}
+
+.mr-tile[data-tone='dark'] {
+  background: var(--mr-dark);
+  color: var(--mr-bg);
+}
+
+.mr-tile[data-tone='mid'] {
+  background: var(--mr-dark-2);
+  color: var(--mr-bg);
+}
+
+.mr-tile[data-tone='soft'] {
+  background: #e9e4da;
+}
+
+.mr-tile-label {
+  font-size: 13px;
+  color: var(--mr-mid);
+  padding-right: 34px;
+}
+
+.mr-tile[data-tone='dark'] .mr-tile-label,
+.mr-tile[data-tone='mid'] .mr-tile-label {
+  color: #eadfdc;
+}
+
+.mr-tile-value {
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 4px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.mr-tile-sub {
+  font-size: 13px;
+  margin-top: 4px;
+  color: var(--mr-mid);
+}
+
+.mr-tile[data-tone='dark'] .mr-tile-sub,
+.mr-tile[data-tone='mid'] .mr-tile-sub {
+  color: #eadfdc;
+}
+
+.mr-corner {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  display: grid;
+  place-items: center;
+  color: inherit;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.mr-corner:hover {
+  background: rgba(87, 67, 68, 0.08);
+}
+
+.mr-empty-add {
+  min-height: 320px;
+  display: grid;
+  place-items: center;
+  color: var(--mr-mid);
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  background: none;
+  width: 100%;
+  cursor: pointer;
+  border-radius: var(--mr-radius);
+  font-family: inherit;
+}
+
+.mr-empty-add:hover {
+  background: rgba(253, 253, 241, 0.45);
+  color: var(--mr-dark);
+}
+
+/* ---------- Dashboard grid ---------- */
+.mr-dash {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1fr 40px;
+  grid-auto-rows: minmax(104px, auto);
+  gap: 14px;
+}
+
+.mr-dash-location {
+  grid-row: span 2;
+}
+
+.mr-dash-wide {
+  grid-column: span 2;
+  min-height: 250px;
+}
+
+.mr-dash-tools {
+  grid-column: 4;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mr-map {
+  margin-top: 12px;
+  height: 110px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 58% 46%, var(--mr-dark) 0 5px, transparent 6px),
+    linear-gradient(90deg, rgba(87, 67, 68, 0.1) 1px, transparent 1px) 0 0 / 22px 22px,
+    linear-gradient(rgba(87, 67, 68, 0.1) 1px, transparent 1px) 0 0 / 22px 22px,
+    #f1ede4;
+}
+
+/* ---------- Lists (payments, utilities) ---------- */
+.mr-row {
+  background: var(--mr-bg);
+  border-radius: 16px;
+  padding: 10px 16px;
+  display: grid;
+  align-items: center;
+  gap: 12px;
+}
+
+.mr-row-label {
+  font-size: 11px;
+  color: var(--mr-muted);
+}
+
+.mr-row-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mr-dark);
+  overflow-wrap: anywhere;
+}
+
+.mr-scroll {
+  max-height: 560px;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mr-status {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mr-status[data-status='paid'] {
+  background: var(--mr-panel);
+  color: var(--mr-dark-2);
+}
+
+.mr-status[data-status='due'] {
+  background: var(--mr-dark);
+  color: var(--mr-bg);
+}
+
+.mr-status[data-status='overdue'] {
+  background: var(--mr-danger);
+  color: var(--mr-bg);
+}
+
+.mr-icon-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--mr-dark-2);
+  color: var(--mr-bg);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+/* ---------- Two-column page: main panel + side tiles ---------- */
+.mr-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  align-items: start;
+}
+
+.mr-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mr-side .mr-tile {
+  background: var(--mr-panel);
+}
+
+.mr-side .mr-tile[data-tone='dark'] {
+  background: var(--mr-dark);
+}
+
+/* ---------- Wizard stepper ---------- */
+.mr-steps {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  max-width: 760px;
+  margin: 8px auto 28px;
+}
+
+.mr-steps::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  left: 60px;
+  right: 60px;
+  height: 2px;
+  background: var(--mr-muted);
+}
+
+.mr-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 120px;
+  font-size: 12px;
+  color: var(--mr-muted);
+  text-align: center;
+}
+
+.mr-step-dot {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--mr-muted);
+  color: var(--mr-bg);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.mr-step[data-state='current'] .mr-step-dot {
+  background: var(--mr-dark);
+}
+
+.mr-step[data-state='current'] {
+  color: var(--mr-dark);
+  font-weight: 600;
+}
+
+/* ---------- Calendar ---------- */
+.mr-cal {
+  background: var(--mr-bg);
+  border-radius: var(--mr-radius);
   overflow: hidden;
 }
 
-.calendar-day[data-outside] {
-  background: transparent;
-  border-color: transparent;
+.mr-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
-.calendar-day[data-today] {
-  border-color: var(--mantine-color-teal-5);
-  box-shadow: inset 0 0 0 1px var(--mantine-color-teal-5);
+.mr-cal-head {
+  background: var(--mr-dark);
+  color: var(--mr-bg);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  padding: 10px 0;
 }
 
-.calendar-event {
+.mr-cal-day {
+  min-height: 92px;
+  padding: 6px;
+  border-right: 1px solid var(--mr-panel);
+  border-bottom: 1px solid var(--mr-panel);
+  text-align: right;
+  font-size: 13px;
+  color: var(--mr-dark-2);
+  overflow: hidden;
+}
+
+.mr-cal-day:nth-child(7n) {
+  border-right: none;
+}
+
+.mr-cal-day[data-outside] {
+  color: var(--mr-muted);
+  background: #f7f5ea;
+}
+
+.mr-cal-num {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+}
+
+.mr-cal-day[data-today] .mr-cal-num {
+  border: 1.5px solid var(--mr-dark);
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.mr-cal-event {
   display: block;
-  margin-top: 3px;
-  padding: 1px 6px;
-  border-radius: 4px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
   font-size: 11px;
-  line-height: 1.5;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  background: var(--mr-dark);
+  color: var(--mr-bg);
 }
 
-@media (max-width: 640px) {
-  .calendar-day {
-    min-height: 54px;
-    padding: 3px;
+.mr-cal-event[data-status='paid'] {
+  background: var(--mr-muted);
+}
+
+.mr-cal-event[data-status='overdue'] {
+  background: var(--mr-danger);
+}
+
+.mr-cal-event[data-kind='meter_reading'] {
+  background: var(--mr-dark-2);
+}
+
+.mr-cal-event[data-kind='contract_end'] {
+  background: #c9a46a;
+}
+
+.mr-month-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--mr-dark);
+  color: var(--mr-bg);
+  border-radius: 999px;
+  padding: 4px 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mr-month-pill button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+}
+
+.mr-month-pill button:hover {
+  background: rgba(253, 253, 241, 0.15);
+}
+
+/* ---------- Housing gallery ---------- */
+.mr-stage-pill {
+  text-decoration: none;
+  display: inline-block;
+  background: var(--mr-dark);
+  color: var(--mr-bg);
+  border-radius: 999px;
+  padding: 6px 20px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.mr-photo-card {
+  background: var(--mr-bg);
+  border-radius: var(--mr-radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.mr-photo-card img {
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ---------- Auth (login / sign up) ---------- */
+.mr-auth-bg {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  /* Drop Karina's house photo into frontend/public/login-bg.jpg; until then the sunset gradient shows. */
+  background:
+    linear-gradient(rgba(253, 253, 241, 0.32), rgba(253, 253, 241, 0.32)),
+    url('/login-bg.jpg') center / cover no-repeat,
+    linear-gradient(165deg, #f1c9cc 0%, #dcb2bd 28%, #cdbccb 52%, #b6a596 78%, #8f7d70 100%);
+}
+
+.mr-auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--mr-panel);
+  border-radius: var(--mr-radius-xl);
+  padding: 30px 28px 26px;
+  box-shadow: 0 20px 60px rgba(87, 67, 68, 0.18);
+}
+
+/* ---------- Small screens ---------- */
+@media (max-width: 1100px) {
+  .mr-dash {
+    grid-template-columns: 1fr 1fr;
   }
 
-  .calendar-event {
+  .mr-dash-location,
+  .mr-dash-wide {
+    grid-column: span 2;
+    grid-row: auto;
+  }
+
+  .mr-dash-tools {
+    grid-column: span 2;
+    grid-row: auto;
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+
+  .mr-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .mr-shell {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .mr-shell > .mr-sidebar {
+    display: none;
+  }
+
+  .mr-main {
+    gap: 12px;
+  }
+
+  .mr-panel {
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .mr-topbar {
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 560px) {
+  .mr-dash {
+    grid-template-columns: 1fr;
+  }
+
+  .mr-dash-location,
+  .mr-dash-wide,
+  .mr-dash-tools {
+    grid-column: auto;
+  }
+
+  .mr-cal-day {
+    min-height: 54px;
+    padding: 3px;
+    font-size: 11px;
+  }
+
+  .mr-cal-event {
     font-size: 0;
     width: 8px;
     height: 8px;
     padding: 0;
-    border-radius: 50%;
     display: inline-block;
-    margin-right: 2px;
+    margin: 2px 1px 0;
+  }
+
+  .mr-steps::before {
+    left: 30px;
+    right: 30px;
+  }
+
+  .mr-step {
+    width: 80px;
+  }
+}
+
+/* Burger only on small screens; name/email hidden on phones */
+.mr-burger {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .mr-burger {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 640px) {
+  .mr-user-text {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .mr-pay-row {
+    grid-template-columns: 1fr 1fr !important;
   }
 }

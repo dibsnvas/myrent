@@ -1,7 +1,7 @@
-import { Alert, Anchor, Button, PasswordInput, Stack, Text, TextInput } from '@mantine/core'
+import { Alert, Button, PasswordInput, Stack, TextInput } from '@mantine/core'
 import { useForm } from '@mantine/form'
+import { IconMail } from '@tabler/icons-react'
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 
 import { errorMessage } from '../api/client'
 import { useAuth } from '../auth/useAuth'
@@ -32,21 +32,17 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthLayout title="Log in">
+    <AuthLayout mode="login">
       <form onSubmit={form.onSubmit(onSubmit)}>
-        <Stack>
-          {error && <Alert color="red">{error}</Alert>}
-          <TextInput label="Email" type="email" autoComplete="email" {...form.getInputProps('email')} />
-          <PasswordInput label="Password" autoComplete="current-password" {...form.getInputProps('password')} />
-          <Button type="submit" loading={submitting} fullWidth>
-            Log in
+        <Stack gap="sm">
+          {error && <Alert color="red" radius="lg">{error}</Alert>}
+          <TextInput aria-label="Email" placeholder="Email *" type="email" autoComplete="email"
+            rightSection={<IconMail size={16} color="var(--mr-muted)" />} {...form.getInputProps('email')} />
+          <PasswordInput aria-label="Password" placeholder="Password *" autoComplete="current-password"
+            {...form.getInputProps('password')} />
+          <Button type="submit" loading={submitting} fullWidth size="md" mt="sm">
+            Login
           </Button>
-          <Text size="sm" ta="center">
-            New here?{' '}
-            <Anchor component={Link} to="/register">
-              Create an account
-            </Anchor>
-          </Text>
         </Stack>
       </form>
     </AuthLayout>

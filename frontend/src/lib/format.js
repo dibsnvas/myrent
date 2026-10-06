@@ -68,3 +68,25 @@ export const REMINDER_LEVEL = {
 
 /** Number inputs give numbers or ''; the API wants strings or null. */
 export const toApiNumber = (value) => (value === '' || value === null || value === undefined ? null : String(value))
+
+/** 5 -> '5th', 21 -> '21st' */
+export const ordinal = (n) => {
+  const tens = n % 100
+  if (tens >= 11 && tens <= 13) return `${n}th`
+  return `${n}${{ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] ?? 'th'}`
+}
+
+/** '2026-10-05' -> 'October 5th' */
+export const longDate = (iso) => {
+  if (!iso) return '—'
+  const date = parseIso(iso)
+  return `${date.toLocaleDateString('en-GB', { month: 'long' })} ${ordinal(date.getDate())}`
+}
+
+/** Whole months between two ISO dates (lease length), e.g. 01.10.2026 – 30.09.2027 -> 12 */
+export const leaseMonths = (startIso, endIso) => {
+  const start = parseIso(startIso)
+  const end = parseIso(endIso)
+  end.setDate(end.getDate() + 1)
+  return (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth())
+}

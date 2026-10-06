@@ -27,9 +27,10 @@ class UploadTests(RentalsTestCase):
         )
 
     def test_photo_upload_strips_gps_and_keeps_date(self) -> None:
-        response = self.upload(image_upload(exif=exif_with_gps_and_date()), room='Kitchen')
+        response = self.upload(image_upload(exif=exif_with_gps_and_date()), room='Kitchen', item='Table', stage='after')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
         self.assertEqual(response.data['taken_on'], '2026-09-14')
+        self.assertEqual((response.data['item'], response.data['stage']), ('Table', 'after'))
         self.assertTrue(response.data['is_image'])
         document = Document.objects.get()
         with Image.open(document.file.path) as stored:
@@ -47,6 +48,8 @@ class UploadTests(RentalsTestCase):
         self.assertEqual(file_response.status_code, status.HTTP_200_OK)
         self.assertEqual(file_response['Content-Type'], 'application/pdf')
         self.assertTrue(b''.join(file_response.streaming_content).startswith(b'%PDF-'))
+        self.assertNotIn('X-Frame-Options', file_response)  # the lease preview embeds it
+        self.assertIn("frame-ancestors 'self' http://localhost:5173", file_response['Content-Security-Policy'])
 
         tampered = response.data['url'].rstrip('/')[:-3] + 'abc/'
         self.assertEqual(self.client.get(tampered).status_code, status.HTTP_404_NOT_FOUND)

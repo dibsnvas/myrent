@@ -6,10 +6,17 @@ from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from apps.auths.models import User
-from apps.auths.serializers import DeleteAccountSerializer, LoginSerializer, RegisterSerializer, UserSerializer
+from apps.auths.serializers import (
+    ChangePasswordSerializer,
+    DeleteAccountSerializer,
+    LoginSerializer,
+    RegisterSerializer,
+    UserSerializer,
+)
 
 
 class RegisterView(generics.CreateAPIView):
@@ -43,4 +50,19 @@ class MeView(generics.RetrieveUpdateDestroyAPIView):
         # Properties cascade to contracts, payments, readings and documents; the document
         # post_delete signal removes the stored files too.
         request.user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ChangePasswordView(APIView):
+    """Change the password; the current one is required. Existing tokens stay valid until they expire."""
+
+    throttle_classes = (ScopedRateThrottle,)
+    throttle_scope = 'auth'
+
+    @extend_schema(request=ChangePasswordSerializer, responses={204: None})
+    def post(self, request: Request) -> Response:
+        serializer = ChangePasswordSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        request.user.set_password(serializer.validated_data['new_password'])
+        request.user.save(update_fields=['password'])
         return Response(status=status.HTTP_204_NO_CONTENT)

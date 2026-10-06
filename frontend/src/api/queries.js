@@ -7,6 +7,8 @@ const get = (url, params) => api.get(url, { params }).then((response) => respons
 
 export const useProperties = () => useQuery({ queryKey: ['properties'], queryFn: () => get('/properties/') })
 
+export const useReminders = () => useQuery({ queryKey: ['reminders'], queryFn: () => get('/reminders/') })
+
 export const useDashboard = (homeId) =>
   useQuery({ queryKey: ['dashboard', homeId], queryFn: () => get(`/properties/${homeId}/dashboard/`) })
 
@@ -54,12 +56,14 @@ export function useSave(mutationFn, { success, notifyErrors = true } = {}) {
   })
 }
 
-export function uploadDocument({ property, kind, file, room = '', description = '', takenOn = '' }) {
+export function uploadDocument({ property, kind, file, room = '', item = '', stage = '', description = '', takenOn = '' }) {
   const form = new FormData()
   form.append('property', property)
   form.append('kind', kind)
   form.append('file', file)
   if (room) form.append('room', room)
+  if (item) form.append('item', item)
+  if (stage) form.append('stage', stage)
   if (description) form.append('description', description)
   if (takenOn) form.append('taken_on', takenOn)
   return api.post('/documents/', form).then((response) => response.data)

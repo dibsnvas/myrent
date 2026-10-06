@@ -3,30 +3,33 @@ import { NumberInput, Select, SimpleGrid, Stack, Textarea, TextInput } from '@ma
 
 import { PROPERTY_TYPES } from '../lib/format'
 
-export function HomeFields({ form }) {
+/** Layout of the "Address and landlord" step in the Figma: three columns of pill inputs. */
+export function HomeFields({ form, showMeterDay = true }) {
   return (
     <Stack>
-      <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <TextInput label="Name" placeholder="Flat on Abay" withAsterisk {...form.getInputProps('title')} />
-        <Select label="Type" data={PROPERTY_TYPES} allowDeselect={false} {...form.getInputProps('property_type')} />
-      </SimpleGrid>
-      <TextInput label="Address" placeholder="Street, building, apartment, city" withAsterisk
-        {...form.getInputProps('address')} />
-      <NumberInput
-        label="Meter readings are due on day"
-        description="Leave empty if you don't submit meter readings"
-        min={1}
-        max={28}
-        allowDecimal={false}
-        w={{ base: '100%', sm: 260 }}
-        {...form.getInputProps('meter_reading_day')}
-      />
       <SimpleGrid cols={{ base: 1, sm: 3 }}>
-        <TextInput label="Landlord name" {...form.getInputProps('landlord_name')} />
+        <TextInput label="Name of rent" placeholder="Ex., Flat on Abay" withAsterisk {...form.getInputProps('title')} />
+        <Select label="Type of rent" data={PROPERTY_TYPES} allowDeselect={false} {...form.getInputProps('property_type')} />
+        <TextInput label="Address of rent" placeholder="Ex., Tole bi 59, apt 12" withAsterisk
+          {...form.getInputProps('address')} />
+      </SimpleGrid>
+      <SimpleGrid cols={{ base: 1, sm: 3 }}>
+        <TextInput label="Landlord name" placeholder="Ex., Serik K." {...form.getInputProps('landlord_name')} />
         <TextInput label="Landlord phone" placeholder="+7 7__ ___ __ __" {...form.getInputProps('landlord_phone')} />
         <TextInput label="Landlord email" type="email" {...form.getInputProps('landlord_email')} />
       </SimpleGrid>
-      <Textarea label="Notes" placeholder="Keys, intercom code, anything to remember" autosize minRows={2}
+      {showMeterDay && (
+        <NumberInput
+          label="Meter readings are due on day"
+          description="Leave empty if meters are not read every month"
+          min={1}
+          max={28}
+          allowDecimal={false}
+          w={{ base: '100%', sm: 300 }}
+          {...form.getInputProps('meter_reading_day')}
+        />
+      )}
+      <Textarea label="Notes" placeholder="Key, intercom code or something else" autosize minRows={1}
         {...form.getInputProps('notes')} />
     </Stack>
   )
@@ -56,8 +59,8 @@ export function LeaseFields({ form, hideStart = false }) {
         <NumberInput label="Deposit, ₸" min={0} thousandSeparator=" " hideControls {...form.getInputProps('deposit')} />
       </SimpleGrid>
       <Textarea
-        label="Key terms"
-        placeholder="Who pays utilities, notice period, rules about rent increases..."
+        label="Notes"
+        placeholder="Who pays for utilities, rules about rent and other"
         autosize
         minRows={2}
         {...form.getInputProps('terms')}

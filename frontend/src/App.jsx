@@ -4,8 +4,11 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './auth/useAuth'
 import Layout from './components/Layout'
 import AccountPage from './pages/AccountPage'
+import CalendarPage from './pages/CalendarPage'
+import ConditionPage from './pages/ConditionPage'
+import ContractPage from './pages/ContractPage'
 import DashboardPage from './pages/DashboardPage'
-import DocumentsPage from './pages/DocumentsPage'
+import HelpPage from './pages/HelpPage'
 import HomeRedirect from './pages/HomeRedirect'
 import LoginPage from './pages/LoginPage'
 import NewHomePage from './pages/NewHomePage'
@@ -47,10 +50,15 @@ export default function App() {
         <Route index element={<HomeRedirect />} />
         <Route path="homes/new" element={<NewHomePage />} />
         <Route path="homes/:homeId" element={<DashboardPage />} />
+        <Route path="homes/:homeId/contract" element={<ContractPage />} />
         <Route path="homes/:homeId/payments" element={<PaymentsPage />} />
         <Route path="homes/:homeId/utilities" element={<UtilitiesPage />} />
-        <Route path="homes/:homeId/documents" element={<DocumentsPage />} />
+        <Route path="homes/:homeId/calendar" element={<CalendarPage />} />
+        <Route path="homes/:homeId/condition" element={<ConditionPage />} />
+        <Route path="homes/:homeId/condition/:stage" element={<ConditionPage />} />
+        <Route path="homes/:homeId/documents" element={<Navigate to="../condition" relative="path" replace />} />
         <Route path="account" element={<AccountPage />} />
+        <Route path="help" element={<HelpPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

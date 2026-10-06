@@ -61,3 +61,20 @@ class AuthTests(APITestCase):
         right = self.client.delete(reverse('me'), {'password': STRONG_PASSWORD}, format='json')
         self.assertEqual(right.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(User.objects.exists())
+
+    def test_change_password(self) -> None:
+        access = self.register().data['access']
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access}')
+        wrong = self.client.post(reverse('change-password'), {
+            'current_password': 'nope', 'new_password': 'another-good-pass-77',
+        }, format='json')
+        self.assertIn('current_password', wrong.data)
+        weak = self.client.post(reverse('change-password'), {
+            'current_password': STRONG_PASSWORD, 'new_password': '123',
+        }, format='json')
+        self.assertIn('new_password', weak.data)
+        ok = self.client.post(reverse('change-password'), {
+            'current_password': STRONG_PASSWORD, 'new_password': 'another-good-pass-77',
+        }, format='json')
+        self.assertEqual(ok.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertTrue(User.objects.get().check_password('another-good-pass-77'))

@@ -1,10 +1,9 @@
-import { Button } from '@mantine/core'
-import { IconHomePlus } from '@tabler/icons-react'
-import { Link, Navigate } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 
 import { useProperties } from '../api/queries'
-import { EmptyState, QueryState } from '../components/common'
+import { QueryState } from '../components/common'
 import { LAST_HOME_KEY } from '../components/Layout'
+import { EmptyAdd, Panel } from '../components/ui'
 
 function lastHome() {
   try {
@@ -14,7 +13,7 @@ function lastHome() {
   }
 }
 
-/** "/" opens the home the tenant used last, or onboarding if there is none yet. */
+/** "/" opens the home the tenant used last, or the empty "Add data about rent" screen. */
 export default function HomeRedirect() {
   const homes = useProperties()
   return (
@@ -22,16 +21,9 @@ export default function HomeRedirect() {
       {(list) => {
         if (!list.length) {
           return (
-            <EmptyState
-              icon={IconHomePlus}
-              title="Add the home you rent"
-              text="Start with the address and your lease. MyRent then builds your rent calendar and reminds you before every payment."
-              action={
-                <Button component={Link} to="/homes/new" mt="sm">
-                  Add a home
-                </Button>
-              }
-            />
+            <Panel>
+              <EmptyAdd to="/homes/new">Add data about rent</EmptyAdd>
+            </Panel>
           )
         }
         const remembered = list.find((home) => String(home.id) === lastHome())
