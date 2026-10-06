@@ -60,12 +60,12 @@ export default function NewHomePage() {
   )
 
   return (
-    <Panel>
+    <Panel className="mr-wizard">
       <Stack gap={2} align="center" mb="md">
         <Title order={2} fz={26} fw={800} ta="center">
           {isFirst ? 'Add your first rent right now!' : 'Add a rent'}
         </Title>
-        <Text size="sm" c="dimmed">Fill the form. You can change everything later.</Text>
+        <Text size="sm">Fill the form. You can change everything later.</Text>
       </Stack>
       <Steps steps={STEPS} active={step} />
 
@@ -100,7 +100,7 @@ export default function NewHomePage() {
             )}
           >
             <LeaseFields form={leaseForm} />
-            <Text size="xs" c="dimmed" mt="sm">
+            <Text size="xs" mt="sm">
               MyRent creates one rent payment per month from these dates, so the calendar and reminders work straight away.
             </Text>
             {footer('Next', saveLease.isPending, { skip: finish })}

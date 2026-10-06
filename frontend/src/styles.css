@@ -728,3 +728,18 @@ a {
     grid-template-columns: 1fr 1fr !important;
   }
 }
+
+/* "Add a rent" wizard: black text for readability (placeholders stay grey so empty fields look empty). */
+.mr-wizard,
+.mr-wizard .mantine-Title-root,
+.mr-wizard .mr-step,
+.mr-wizard .mantine-InputWrapper-label,
+.mr-wizard .mantine-InputWrapper-description,
+.mr-wizard .mantine-Input-input,
+.mr-wizard .mantine-PasswordInput-innerInput {
+  color: #000;
+}
+
+.mr-wizard .mantine-Input-input::placeholder {
+  color: #6f6f6f;
+}
