@@ -43,7 +43,9 @@ function UpcomingTile({ base, upcoming, reminders }) {
 }
 
 function PhotoTile({ base, photos }) {
-  const [index, setIndex] = useState(0)
+  const [selected, setIndex] = useState(0)
+  // After a photo is deleted the list gets shorter: fall back to the first one instead of "No photos yet".
+  const index = selected < photos.length ? selected : 0
   const photo = photos[index]
   return (
     <Tile label="Move-in photos" value={photo ? photo.room : undefined} to={`${base}/condition`}>

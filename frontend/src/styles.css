@@ -376,6 +376,19 @@ a {
   color: var(--mr-bg);
 }
 
+.mr-reminder-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  padding: 6px 8px;
+  margin: 0 -8px;
+  border-radius: 12px;
+}
+
+.mr-reminder-link:hover {
+  background: var(--mr-panel);
+}
+
 .mr-icon-circle {
   width: 38px;
   height: 38px;

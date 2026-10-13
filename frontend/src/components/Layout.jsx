@@ -19,6 +19,7 @@ import { Link, Outlet, useLocation, useMatch, useNavigate } from 'react-router-d
 import { useProperties, useReminders } from '../api/queries'
 import { useAuth } from '../auth/useAuth'
 import { formatDate } from '../lib/format'
+import { reminderPath } from '../lib/reminders'
 
 export const LAST_HOME_KEY = 'myrent.lastHome'
 
@@ -85,11 +86,13 @@ function Sidebar({ homeId, onNavigate }) {
 function Reminders() {
   const reminders = useReminders()
   const list = reminders.data ?? []
+  const [opened, { open, close, toggle }] = useDisclosure()
   return (
-    <Popover position="bottom-end" width={320} shadow="md">
+    <Popover position="bottom-end" width={320} shadow="md" opened={opened}
+      onChange={(value) => (value ? open() : close())}>
       <Popover.Target>
         <Indicator disabled={!list.length} label={list.length} size={16} color="rose.7" offset={4}>
-          <ActionIcon variant="subtle" color="rose.7" size="lg" radius="xl" aria-label="Reminders">
+          <ActionIcon variant="subtle" color="rose.7" size="lg" radius="xl" aria-label="Reminders" onClick={toggle}>
             <IconBell size={22} stroke={1.6} />
           </ActionIcon>
         </Indicator>
@@ -97,14 +100,14 @@ function Reminders() {
       <Popover.Dropdown bg="var(--mr-bg)">
         <Text fw={700} mb="xs">Reminders</Text>
         {list.length ? (
-          <Stack gap={8}>
+          <Stack gap={4}>
             {list.map((reminder) => (
-              <div key={reminder.key}>
+              <Link key={reminder.key} to={reminderPath(reminder)} onClick={close} className="mr-reminder-link">
                 <Text size="sm" fw={600} c={reminder.level === 'overdue' ? 'var(--mr-danger)' : undefined}>
                   {reminder.title}
                 </Text>
                 <Text size="xs" c="dimmed">{formatDate(reminder.date)} · {reminder.property_title}</Text>
-              </div>
+              </Link>
             ))}
           </Stack>
         ) : (

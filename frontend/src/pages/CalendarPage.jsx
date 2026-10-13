@@ -7,6 +7,7 @@ import { useCalendar, useDashboard } from '../api/queries'
 import MonthCalendar from '../components/MonthCalendar'
 import { Panel, Tile } from '../components/ui'
 import { currentMonth, formatDate, formatMoney, monthLabel, relativeDays, shiftMonth } from '../lib/format'
+import { reminderPath } from '../lib/reminders'
 
 const LEGEND = [
   { label: 'Due', style: { background: 'var(--mr-dark)' } },
@@ -56,7 +57,7 @@ export default function CalendarPage() {
 
       <div className="mr-side">
         {next ? (
-          <Tile tone="dark" label="Next reminder" value={formatDate(next.date)}>
+          <Tile tone="dark" label="Next reminder" value={formatDate(next.date)} to={reminderPath(next)}>
             <Text fw={600} mt={4} c="var(--mr-bg)">{next.title}</Text>
             <Text size="sm" c="#eadfdc">
               {next.amount ? `${formatMoney(next.amount)} · ` : ''}{relativeDays(next.date)}
@@ -73,7 +74,7 @@ export default function CalendarPage() {
           <Stack gap={10}>
             {rest.map((reminder) => (
               <Tile key={reminder.key} label={formatDate(reminder.date)} value={reminder.title}
-                sub={reminder.amount ? formatMoney(reminder.amount) : undefined} />
+                sub={reminder.amount ? formatMoney(reminder.amount) : undefined} to={reminderPath(reminder)} />
             ))}
           </Stack>
         )}
