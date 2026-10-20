@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -32,6 +32,18 @@ def _check_same_property(attrs: dict[str, Any], prop: Property, *fields: str) ->
     }
     if errors:
         raise serializers.ValidationError(errors)
+
+
+def _check_not_in_future(day: date | None) -> date | None:
+    """A payment cannot be recorded as paid on a day that has not come yet (QA pass: typo in the year)."""
+    if day and day > timezone.localdate():
+        raise serializers.ValidationError('The payment date cannot be in the future.')
+    return day
+
+
+def _reading_text(value: Decimal, unit: str) -> str:
+    number = format(value.normalize(), 'f')
+    return f'{number} {unit}'.strip()
 
 
 def _check_lease_dates(start, end) -> None:
@@ -198,6 +210,9 @@ class PaymentSerializer(serializers.ModelSerializer):
     def get_status(self, obj: Payment) -> str:
         return obj.get_status()
 
+    def validate_paid_on(self, value: date | None) -> date | None:
+        return _check_not_in_future(value)
+
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         instance = self.instance
         prop = attrs.get('property') or instance.property
@@ -214,8 +229,11 @@ class PaymentSerializer(serializers.ModelSerializer):
 
 
 class MarkPaidSerializer(serializers.Serializer):
-    paid_on = serializers.DateField(required=False, help_text='Default: today.')
+    paid_on = serializers.DateField(required=False, help_text='Default: today. Cannot be in the future.')
     receipt = OwnedPrimaryKeyRelatedField(Document, required=False, allow_null=True)
+
+    def validate_paid_on(self, value: date | None) -> date | None:
+        return _check_not_in_future(value)
 
 
 class MeterReadingSerializer(serializers.ModelSerializer):
@@ -249,7 +267,29 @@ class MeterReadingSerializer(serializers.ModelSerializer):
         if not utility.has_meter:
             raise serializers.ValidationError({'utility': f'{utility.name} has no meter. Turn "has meter" on first.'})
         _check_same_property(attrs, utility.property, 'photo')
+        self._check_meter_order(utility, attrs)
         return attrs
+
+    def _check_meter_order(self, utility: Utility, attrs: dict[str, Any]) -> None:
+        """A meter only counts up: a reading must fit between the readings before and after its date.
+
+        Without this a typo (1 079 instead of 10 790) showed a negative consumption like "+-9 711".
+        """
+        value = attrs.get('value', getattr(self.instance, 'value', None))
+        day = attrs.get('reading_date', getattr(self.instance, 'reading_date', None))
+        others = MeterReading.objects.filter(utility=utility).exclude(pk=getattr(self.instance, 'pk', None))
+        previous = others.filter(reading_date__lte=day).order_by('-reading_date', '-id').first()
+        later = others.filter(reading_date__gt=day).order_by('reading_date', 'id').first()
+        if previous and value < previous.value:
+            raise serializers.ValidationError({'value': (
+                f'Must be at least the previous reading: {_reading_text(previous.value, utility.unit)} '
+                f'on {previous.reading_date:%d.%m.%Y}.'
+            )})
+        if later and value > later.value:
+            raise serializers.ValidationError({'value': (
+                f'Must not be more than the later reading: {_reading_text(later.value, utility.unit)} '
+                f'on {later.reading_date:%d.%m.%Y}.'
+            )})
 
     def create(self, validated_data: dict[str, Any]) -> MeterReading:
         validated_data['property'] = validated_data['utility'].property

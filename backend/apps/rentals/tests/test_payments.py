@@ -25,6 +25,25 @@ class PaymentTests(RentalsTestCase):
         unpaid = self.client.post(reverse('payment-mark-unpaid', args=[payment.id]))
         self.assertEqual(unpaid.data['status'], 'overdue')
 
+    def test_paid_on_cannot_be_in_the_future(self, _today) -> None:
+        payment = Payment.objects.create(property=self.home, kind='other', amount=500, due_date=date(2026, 9, 20))
+        response = self.client.post(
+            reverse('payment-mark-paid', args=[payment.id]), {'paid_on': '2027-10-01'}, format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('paid_on', response.data)
+        response = self.client.patch(
+            reverse('payment-detail', args=[payment.id]), {'paid_on': '2026-10-02'}, format='json'
+        )
+        self.assertIn('paid_on', response.data)
+        payment.refresh_from_db()
+        self.assertIsNone(payment.paid_on)
+
+        today = self.client.patch(
+            reverse('payment-detail', args=[payment.id]), {'paid_on': '2026-10-01'}, format='json'
+        )
+        self.assertEqual(today.data['status'], 'paid')
+
     def test_utility_bill_needs_a_utility(self, _today) -> None:
         response = self.client.post(reverse('payment-list'), {
             'property': self.home.id, 'kind': 'utility', 'amount': '100', 'due_date': '2026-10-20',
@@ -89,3 +108,30 @@ class DashboardTests(RentalsTestCase):
         # last three months with bills up to today: Jul 6000, Aug 8000, Sep 7000 + 3000
         self.assertEqual(data['average_utility_bill'], '8000.00')
         self.assertEqual(data['next_utility_bill']['due_date'], '2026-10-20')
+
+    def test_meter_reading_cannot_go_down(self, _today) -> None:
+        power = Utility.objects.create(property=self.home, name='Electricity', unit='kWh', has_meter=True)
+        MeterReading.objects.create(property=self.home, utility=power, value='10790', reading_date=date(2026, 9, 25))
+        later = MeterReading.objects.create(
+            property=self.home, utility=power, value='10955', reading_date=date(2026, 10, 25)
+        )
+        url = reverse('meter-reading-list')
+
+        def record(value: str):
+            body = {'utility': power.id, 'value': value, 'reading_date': '2026-10-01'}
+            return self.client.post(url, body, format='json')
+
+        typo = record('1079')
+        self.assertEqual(typo.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('10790 kWh on 25.09.2026', str(typo.data['value']))
+
+        too_big = record('11000')
+        self.assertIn('10955 kWh on 25.10.2026', str(too_big.data['value']))
+
+        between = record('10850')
+        self.assertEqual(between.status_code, status.HTTP_201_CREATED, between.data)
+        self.assertEqual(between.data['consumption'], '60.000')
+
+        # Editing a reading is checked against its neighbours, not against itself.
+        edited = self.client.patch(reverse('meter-reading-detail', args=[later.id]), {'value': '10960'}, format='json')
+        self.assertEqual(edited.status_code, status.HTTP_200_OK, edited.data)

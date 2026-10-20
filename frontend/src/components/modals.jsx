@@ -34,6 +34,9 @@ import { HomeFields, LeaseFields } from './forms'
 export const FILE_ACCEPT = 'application/pdf,image/jpeg,image/png,image/webp'
 const IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp'
 
+const futureDateError = (value) =>
+  !value ? 'Required' : value > todayIso() ? 'The payment date cannot be in the future.' : null
+
 function ModalActions({ onClose, loading, label = 'Save' }) {
   return (
     <Group justify="flex-end" mt="lg">
@@ -172,6 +175,7 @@ export function PaymentModal({ homeId, payment, preset, utilities = [], opened, 
     validate: {
       amount: (value) => (Number(value) > 0 ? null : 'Enter the amount'),
       due_date: (value) => (value ? null : 'Required'),
+      paid_on: (value, values) => (values.already_paid ? futureDateError(value) : null),
       utility: (value, values) => (values.kind === 'utility' && !value ? 'Choose the utility' : null),
     },
   })
@@ -211,7 +215,7 @@ export function PaymentModal({ homeId, payment, preset, utilities = [], opened, 
           </SimpleGrid>
           <Checkbox label="Already paid" {...form.getInputProps('already_paid', { type: 'checkbox' })} />
           {form.values.already_paid && (
-            <TextInput label="Paid on" type="date" {...form.getInputProps('paid_on')} />
+            <TextInput label="Paid on" type="date" max={todayIso()} {...form.getInputProps('paid_on')} />
           )}
           <FileInput label="Receipt" accept={FILE_ACCEPT} leftSection={<IconUpload size={16} />} clearable
             {...form.getInputProps('receipt')} />
@@ -367,7 +371,8 @@ export function LeaseFileModal({ lease, opened, onClose }) {
 
 /** "Make payment": record that a payment was made, with an optional receipt. No money is transferred. */
 export function MarkPaidModal({ payment, opened, onClose }) {
-  const form = useForm({ initialValues: { paid_on: todayIso(), receipt: null } })
+  // Checked here too, so a receipt is not uploaded for a payment the server then refuses.
+  const form = useForm({ initialValues: { paid_on: todayIso(), receipt: null }, validate: { paid_on: futureDateError } })
   const save = useSave(
     async ({ paid_on, receipt }) => {
       const payload = { paid_on }
@@ -383,7 +388,7 @@ export function MarkPaidModal({ payment, opened, onClose }) {
           <Text size="sm">
             {payment.display_title} · {formatMoney(payment.amount)} · due {formatDate(payment.due_date)}
           </Text>
-          <TextInput label="Paid on" type="date" {...form.getInputProps('paid_on')} />
+          <TextInput label="Paid on" type="date" max={todayIso()} {...form.getInputProps('paid_on')} />
           <FileInput label="Receipt or bank screenshot" description="Optional. PDF or photo." accept={FILE_ACCEPT}
             leftSection={<IconUpload size={16} />} clearable {...form.getInputProps('receipt')} />
           <Text size="xs" c="dimmed">MyRent only records the payment; it does not send money.</Text>

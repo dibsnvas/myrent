@@ -45,6 +45,13 @@ export const relativeDays = (iso) => {
   return days > 0 ? `in ${days} days` : `${-days} days ago`
 }
 
+/** Meter consumption since the previous reading: '165.000' -> '+165'. */
+export const formatUsage = (consumption) => {
+  if (consumption === null || consumption === undefined) return '—'
+  const used = Number(consumption)
+  return used > 0 ? `+${used}` : String(used)
+}
+
 export const formatBytes = (bytes) =>
   bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`
 

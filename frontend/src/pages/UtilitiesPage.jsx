@@ -22,7 +22,7 @@ import { useDashboard, usePayments, useReadings, useSave, useUtilities } from '.
 import { QueryState } from '../components/common'
 import { EditHomeModal, PaymentModal, ReadingModal, UtilityModal } from '../components/modals'
 import { EmptyAdd, Panel, Tile } from '../components/ui'
-import { formatDate, formatMoney, ordinal } from '../lib/format'
+import { formatDate, formatMoney, formatUsage, ordinal } from '../lib/format'
 
 const ICONS = [
   [/electr|свет|power/i, IconBolt],
@@ -46,7 +46,7 @@ function ReadingHistory({ homeId, utility, onClose }) {
               <div key={reading.id} className="mr-row" style={{ gridTemplateColumns: '1fr 1fr 1fr auto' }}>
                 <div><div className="mr-row-label">Date</div><div className="mr-row-value">{formatDate(reading.reading_date)}</div></div>
                 <div><div className="mr-row-label">Value</div><div className="mr-row-value">{Number(reading.value)} {utility.unit}</div></div>
-                <div><div className="mr-row-label">Used</div><div className="mr-row-value">{reading.consumption ? `+${Number(reading.consumption)}` : '—'}</div></div>
+                <div><div className="mr-row-label">Used</div><div className="mr-row-value">{formatUsage(reading.consumption)}</div></div>
                 <Group gap={4} wrap="nowrap">
                   {reading.photo_file && (
                     <ActionIcon component="a" href={reading.photo_file.url} target="_blank" rel="noreferrer" variant="subtle"
@@ -77,7 +77,7 @@ function UtilityRow({ utility, onReading, onBill, onEdit, onHistory }) {
         <div className="mr-row-value" style={{ fontSize: 16 }}>{utility.name}</div>
         <div className="mr-row-label" style={{ fontSize: 12 }}>
           {utility.has_meter
-            ? last ? `Last reading ${Number(last.value)} ${utility.unit} · ${formatDate(last.reading_date)}${last.consumption ? ` · +${Number(last.consumption)} used` : ''}` : 'Meter · no readings yet'
+            ? last ? `Last reading ${Number(last.value)} ${utility.unit} · ${formatDate(last.reading_date)}${last.consumption ? ` · ${formatUsage(last.consumption)} used` : ''}` : 'Meter · no readings yet'
             : 'No meter'}
         </div>
       </button>
