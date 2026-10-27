@@ -1,6 +1,8 @@
 /** Building blocks of the Figma layout: creamy panels, tiles with a corner button, status pills, stepper. */
-import { IconArrowUpRight, IconCheck, IconPencil } from '@tabler/icons-react'
+import { IconArrowUpRight, IconCheck, IconChevronLeft, IconChevronRight, IconPencil } from '@tabler/icons-react'
 import { Link } from 'react-router-dom'
+
+import { currentMonth, monthLabel, shiftMonth } from '../lib/format'
 
 export function Panel({ title, actions, children, className = '', ...rest }) {
   return (
@@ -78,6 +80,24 @@ export function Steps({ steps, active }) {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+/** ‹ October 2026 › pill. `month` is 'YYYY-MM'; clicking the name goes back to this month. */
+export function MonthSwitcher({ month, onChange, style }) {
+  return (
+    <div className="mr-month-pill" style={style}>
+      <button type="button" onClick={() => onChange(shiftMonth(month, -1))} aria-label="Previous month">
+        <IconChevronLeft size={16} />
+      </button>
+      <button type="button" onClick={() => onChange(currentMonth())} style={{ width: 'auto', padding: '0 4px', borderRadius: 8 }}
+        aria-label="Back to this month">
+        {monthLabel(month)}
+      </button>
+      <button type="button" onClick={() => onChange(shiftMonth(month, 1))} aria-label="Next month">
+        <IconChevronRight size={16} />
+      </button>
     </div>
   )
 }

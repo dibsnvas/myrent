@@ -1,12 +1,11 @@
 import { Group, Stack, Text } from '@mantine/core'
-import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 import { useCalendar, useDashboard } from '../api/queries'
 import MonthCalendar from '../components/MonthCalendar'
-import { Panel, Tile } from '../components/ui'
-import { currentMonth, formatDate, formatMoney, monthLabel, relativeDays, shiftMonth } from '../lib/format'
+import { MonthSwitcher, Panel, Tile } from '../components/ui'
+import { currentMonth, formatDate, formatMoney, relativeDays } from '../lib/format'
 import { reminderPath } from '../lib/reminders'
 
 const LEGEND = [
@@ -29,20 +28,7 @@ export default function CalendarPage() {
     <div className="mr-split">
       <Panel
         title="Calendar"
-        actions={
-          <div className="mr-month-pill">
-            <button type="button" onClick={() => setMonth(shiftMonth(month, -1))} aria-label="Previous month">
-              <IconChevronLeft size={16} />
-            </button>
-            <button type="button" onClick={() => setMonth(currentMonth())} style={{ width: 'auto', padding: '0 4px', borderRadius: 8 }}
-              aria-label="Back to this month">
-              {monthLabel(month)}
-            </button>
-            <button type="button" onClick={() => setMonth(shiftMonth(month, 1))} aria-label="Next month">
-              <IconChevronRight size={16} />
-            </button>
-          </div>
-        }
+        actions={<MonthSwitcher month={month} onChange={setMonth} />}
       >
         <MonthCalendar month={month} events={calendar.data ?? []} />
         <Group gap="md" mt="sm">

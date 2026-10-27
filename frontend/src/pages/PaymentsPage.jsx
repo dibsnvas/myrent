@@ -1,14 +1,14 @@
-import { ActionIcon, Anchor, Button, Menu, SegmentedControl, Text } from '@mantine/core'
+import { ActionIcon, Anchor, Button, Group, Menu, SegmentedControl, Stack, Text } from '@mantine/core'
 import { IconCheck, IconDots, IconDownload, IconPencil, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 import { api } from '../api/client'
-import { useDashboard, usePayments, useSave, useUtilities } from '../api/queries'
+import { useDashboard, useMonthSummary, usePayments, useSave, useUtilities } from '../api/queries'
 import { QueryState } from '../components/common'
 import { LeaseModal, MarkPaidModal, PaymentModal } from '../components/modals'
-import { Panel, StatusPill, Tile } from '../components/ui'
-import { formatDate, formatMoney, ordinal } from '../lib/format'
+import { MonthSwitcher, Panel, StatusPill, Tile } from '../components/ui'
+import { currentMonth, formatDate, formatMoney, ordinal } from '../lib/format'
 
 const ROW_COLUMNS = '104px minmax(0, 1fr) 120px 96px 150px'
 
@@ -63,6 +63,40 @@ function PaymentRow({ payment, onPay, onEdit }) {
         </Menu>
       </div>
     </div>
+  )
+}
+
+function SummaryLine({ label, value, small }) {
+  return (
+    <Group justify="space-between" wrap="nowrap" gap="xs" pl={small ? 10 : 0}>
+      <Text size={small ? 'xs' : 'sm'} c={small ? 'dimmed' : undefined}>{label}</Text>
+      <Text size={small ? 'xs' : 'sm'} fw={small ? 400 : 600} c={small ? 'dimmed' : undefined}>{formatMoney(value)}</Text>
+    </Group>
+  )
+}
+
+/** US-11: rent and every bill of one month in one number, so a tenant on a fixed budget knows it in advance. */
+function MonthSummary({ homeId }) {
+  const [month, setMonth] = useState(currentMonth)
+  const summary = useMonthSummary(homeId, month)
+  const data = summary.data
+  return (
+    <Tile label="Housing cost per month">
+      <MonthSwitcher month={month} onChange={setMonth} style={{ marginTop: 8 }} />
+      <div className="mr-tile-value" style={{ marginTop: 8 }}>{data ? formatMoney(data.total) : '—'}</div>
+      {data && Number(data.total) > 0 && (
+        <Stack gap={3} mt={6}>
+          <SummaryLine label="Rent" value={data.rent} />
+          <SummaryLine label="Utilities" value={data.utilities} />
+          {data.utilities_by_name.map((bill) => <SummaryLine key={bill.name} label={bill.name} value={bill.amount} small />)}
+          {Number(data.other) > 0 && <SummaryLine label="Other" value={data.other} />}
+          <div style={{ borderTop: '1px solid var(--mr-muted)', margin: '4px 0' }} />
+          <SummaryLine label="Paid" value={data.paid} />
+          <SummaryLine label="Left to pay" value={data.left} />
+        </Stack>
+      )}
+      {data && Number(data.total) === 0 && <Text size="sm" c="dimmed" mt={4}>Nothing due this month.</Text>}
+    </Tile>
   )
 }
 
@@ -132,6 +166,7 @@ export default function PaymentsPage() {
         <Button size="md" color="rose.4" leftSection={<IconPlus size={16} />} onClick={() => setModal({ type: 'new' })}>
           Add bill or other payment
         </Button>
+        <MonthSummary homeId={homeId} />
       </div>
 
       {modal?.type === 'pay' && <MarkPaidModal payment={modal.payment} opened onClose={close} />}

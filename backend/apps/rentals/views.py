@@ -40,6 +40,7 @@ from apps.rentals.serializers import (
 from apps.rentals.services.events import calendar_events, month_bounds, reminders_for
 from apps.rentals.services.notify import send_reminder_emails
 from apps.rentals.services.schedule import delete_contract, renew_contract, sync_rent_schedule
+from apps.rentals.services.summary import month_summary
 from apps.rentals.services.uploads import document_for_token
 
 PROPERTY_PARAM = OpenApiParameter('property', int, description='Only this home')
@@ -85,6 +86,14 @@ class PropertyViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
         """Everything the home screen needs in one request."""
         prop = self.get_object()
         return Response(_dashboard(prop, request))
+
+    @extend_schema(parameters=[MONTH_PARAM], responses=OpenApiTypes.OBJECT)
+    @action(detail=True, url_path='month-summary')
+    def month_summary(self, request: Request, pk: str | None = None) -> Response:
+        """Total housing cost for one month (default: this month), split into rent, utilities and other."""
+        prop = self.get_object()
+        month = _parse_month(request.query_params.get('month')) or timezone.localdate().replace(day=1)
+        return Response(month_summary(prop, month))
 
 
 UPCOMING_PAYMENTS = 5

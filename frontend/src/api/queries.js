@@ -15,6 +15,9 @@ export const useDashboard = (homeId) =>
 export const usePayments = (homeId, month) =>
   useQuery({ queryKey: ['payments', homeId, month], queryFn: () => get('/payments/', { property: homeId, month }) })
 
+export const useMonthSummary = (homeId, month) =>
+  useQuery({ queryKey: ['month-summary', homeId, month], queryFn: () => get(`/properties/${homeId}/month-summary/`, { month }) })
+
 export const useCalendar = (homeId, month) =>
   useQuery({ queryKey: ['calendar', homeId, month], queryFn: () => get('/calendar/', { property: homeId, month }) })
 
