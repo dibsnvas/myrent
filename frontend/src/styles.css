@@ -389,6 +389,29 @@ a {
   background: var(--mr-panel);
 }
 
+.mr-status[data-status='open'] {
+  background: var(--mr-danger);
+  color: var(--mr-bg);
+}
+
+.mr-status[data-status='in_progress'] {
+  background: var(--mr-dark);
+  color: var(--mr-bg);
+}
+
+.mr-status[data-status='resolved'] {
+  background: var(--mr-panel);
+  color: var(--mr-dark-2);
+}
+
+.mr-repair-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  object-fit: cover;
+  display: block;
+}
+
 .mr-icon-circle {
   width: 38px;
   height: 38px;
@@ -739,6 +762,10 @@ a {
 @media (max-width: 640px) {
   .mr-pay-row {
     grid-template-columns: 1fr 1fr !important;
+  }
+
+  .mr-repair-row {
+    grid-template-columns: 48px minmax(0, 1fr) !important;
   }
 }
 

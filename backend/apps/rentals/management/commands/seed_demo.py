@@ -19,7 +19,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.auths.models import User
-from apps.rentals.models import Contract, Document, MeterReading, Payment, Property, Utility
+from apps.rentals.models import Contract, Document, MeterReading, Payment, Property, RepairRequest, Utility
 from apps.rentals.services.schedule import add_months, sync_rent_schedule
 
 DEMO_EMAIL = 'demo@myrent.test'
@@ -82,7 +82,7 @@ def _document(prop: Property, kind: str, name: str, data: bytes, content_type: s
 
 
 class Command(BaseCommand):
-    help = f'Create the demo tenant {DEMO_EMAIL} with a home, lease, payments, meter readings and photos.'
+    help = f'Create the demo tenant {DEMO_EMAIL} with a home, lease, payments, meter readings, photos and repairs.'
 
     def add_arguments(self, parser) -> None:
         parser.add_argument('--reset', action='store_true', help='Delete the demo tenant first.')
@@ -153,6 +153,18 @@ class Command(BaseCommand):
                 prop, Document.Kind.CONDITION, f'{item.lower()}.jpg', _image(f'{room}: {item}', colour),
                 'image/jpeg', room=room, item=item, description=description, taken_on=start,
             )
+
+        tap_photo = _document(
+            prop, Document.Kind.REPAIR, 'tap.jpg', _image('Kitchen: leaking tap', (170, 200, 220)), 'image/jpeg'
+        )
+        RepairRequest.objects.create(
+            property=prop, title='Leaking kitchen tap', photo=tap_photo, reported_on=today - timedelta(days=12),
+            description='Drips all the time. Told the landlord by phone.',
+        )
+        RepairRequest.objects.create(
+            property=prop, title='Bathroom light does not turn on', status=RepairRequest.Status.RESOLVED,
+            reported_on=start + timedelta(days=10), resolved_on=start + timedelta(days=13),
+        )
 
         self.stdout.write(self.style.SUCCESS(
             f'Demo tenant ready: {DEMO_EMAIL} (password in apps/rentals/management/commands/seed_demo.py)'

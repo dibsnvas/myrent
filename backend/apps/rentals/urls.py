@@ -10,6 +10,7 @@ from apps.rentals.views import (
     PaymentViewSet,
     PropertyViewSet,
     RemindersView,
+    RepairRequestViewSet,
     SendRemindersView,
     UtilityViewSet,
     document_file,
@@ -22,6 +23,7 @@ router.register('payments', PaymentViewSet, basename='payment')
 router.register('utilities', UtilityViewSet, basename='utility')
 router.register('meter-readings', MeterReadingViewSet, basename='meter-reading')
 router.register('documents', DocumentViewSet, basename='document')
+router.register('repairs', RepairRequestViewSet, basename='repair')
 
 urlpatterns = [
     path('calendar/', CalendarView.as_view(), name='calendar'),

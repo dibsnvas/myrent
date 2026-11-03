@@ -17,7 +17,7 @@ from apps.rentals.constants import (
     MONEY_DECIMAL_PLACES,
     MONEY_MAX_DIGITS,
 )
-from apps.rentals.models import Contract, Document, MeterReading, Payment, Property, Utility
+from apps.rentals.models import Contract, Document, MeterReading, Payment, Property, RepairRequest, Utility
 from apps.rentals.ownership import OwnedPrimaryKeyRelatedField
 from apps.rentals.services.schedule import months_between
 from apps.rentals.services.uploads import file_link, prepare_upload
@@ -294,6 +294,49 @@ class MeterReadingSerializer(serializers.ModelSerializer):
     def create(self, validated_data: dict[str, Any]) -> MeterReading:
         validated_data['property'] = validated_data['utility'].property
         return super().create(validated_data)
+
+
+class RepairRequestSerializer(serializers.ModelSerializer):
+    property = OwnedPrimaryKeyRelatedField(Property, owner_lookup='owner')
+    photo = OwnedPrimaryKeyRelatedField(Document, required=False, allow_null=True)
+    photo_file = NestedDocumentField('photo')
+    days_open = serializers.SerializerMethodField(help_text='Days since it was reported, until it was resolved.')
+
+    class Meta:
+        model = RepairRequest
+        fields = (
+            'id', 'property', 'title', 'description', 'photo', 'photo_file', 'reported_on', 'status', 'resolved_on',
+            'days_open', 'created_at',
+        )
+        read_only_fields = ('created_at',)
+
+    def get_days_open(self, obj: RepairRequest) -> int:
+        return obj.days_open()
+
+    def validate_reported_on(self, value: date) -> date:
+        if value > timezone.localdate():
+            raise serializers.ValidationError('The report date cannot be in the future.')
+        return value
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        instance = self.instance
+        prop = attrs.get('property') or instance.property
+        if instance and prop != instance.property:
+            raise serializers.ValidationError({'property': 'A repair request cannot move to another home.'})
+        _check_same_property(attrs, prop, 'photo')
+        today = timezone.localdate()
+        repair_status = attrs.get('status', getattr(instance, 'status', RepairRequest.Status.OPEN))
+        if repair_status != RepairRequest.Status.RESOLVED:
+            attrs['resolved_on'] = None  # reopened: the days keep counting
+            return attrs
+        reported_on = attrs.get('reported_on') or getattr(instance, 'reported_on', None) or today
+        resolved_on = attrs.get('resolved_on') or getattr(instance, 'resolved_on', None) or today
+        if resolved_on < reported_on:
+            raise serializers.ValidationError({'resolved_on': 'Cannot be before the report date.'})
+        if resolved_on > today:
+            raise serializers.ValidationError({'resolved_on': 'Cannot be in the future.'})
+        attrs['resolved_on'] = resolved_on
+        return attrs
 
 
 class UtilitySerializer(serializers.ModelSerializer):

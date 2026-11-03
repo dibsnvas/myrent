@@ -1,6 +1,15 @@
 from django.contrib import admin
 
-from apps.rentals.models import Contract, Document, MeterReading, Payment, Property, ReminderLog, Utility
+from apps.rentals.models import (
+    Contract,
+    Document,
+    MeterReading,
+    Payment,
+    Property,
+    ReminderLog,
+    RepairRequest,
+    Utility,
+)
 
 
 @admin.register(Property)
@@ -40,6 +49,13 @@ class MeterReadingAdmin(admin.ModelAdmin):
 class DocumentAdmin(admin.ModelAdmin):
     list_display = ('original_name', 'property', 'kind', 'room', 'content_type', 'size', 'uploaded_at')
     list_filter = ('kind', 'content_type')
+
+
+@admin.register(RepairRequest)
+class RepairRequestAdmin(admin.ModelAdmin):
+    list_display = ('title', 'property', 'status', 'reported_on', 'resolved_on')
+    list_filter = ('status',)
+    search_fields = ('title', 'property__title')
 
 
 @admin.register(ReminderLog)

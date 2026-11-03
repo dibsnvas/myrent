@@ -38,6 +38,14 @@ export const useDocuments = (homeId) =>
     refetchInterval: 5 * 60 * 1000,
   })
 
+// Photo links are signed like documents, so they refresh the same way.
+export const useRepairs = (homeId) =>
+  useQuery({
+    queryKey: ['repairs', homeId],
+    queryFn: () => get('/repairs/', { property: homeId }),
+    refetchInterval: 5 * 60 * 1000,
+  })
+
 export const useContracts = (homeId) =>
   useQuery({ queryKey: ['contracts', homeId], queryFn: () => get('/contracts/', { property: homeId }) })
 

@@ -398,3 +398,59 @@ export function MarkPaidModal({ payment, opened, onClose }) {
     </Modal>
   )
 }
+
+const REPAIR_STATUSES = [
+  { value: 'open', label: 'Open' },
+  { value: 'in_progress', label: 'In progress' },
+  { value: 'resolved', label: 'Resolved' },
+]
+
+/** New repair request (repair = null) or edit one. The photo goes in as a Document of kind "repair". */
+export function RepairModal({ homeId, repair, opened, onClose }) {
+  const form = useForm({
+    initialValues: {
+      title: repair?.title ?? '',
+      description: repair?.description ?? '',
+      reported_on: repair?.reported_on ?? todayIso(),
+      status: repair?.status ?? 'open',
+      resolved_on: repair?.resolved_on ?? todayIso(),
+      photo: null,
+    },
+    validate: {
+      title: (value) => (value.trim() ? null : 'What is broken?'),
+      reported_on: (value) => (!value ? 'Required' : value > todayIso() ? 'Cannot be in the future' : null),
+      resolved_on: (value, values) =>
+        values.status === 'resolved' && value < values.reported_on ? 'Cannot be before the report date' : null,
+    },
+  })
+  const save = useSave(
+    async ({ photo, resolved_on, ...values }) => {
+      const payload = { ...values, title: values.title.trim() }
+      if (values.status === 'resolved') payload.resolved_on = resolved_on
+      if (photo) payload.photo = (await uploadDocument({ property: homeId, kind: 'repair', file: photo })).id
+      return repair ? api.patch(`/repairs/${repair.id}/`, payload) : api.post('/repairs/', { ...payload, property: homeId })
+    },
+    { success: 'Repair request saved' },
+  )
+  return (
+    <Modal opened={opened} onClose={onClose} title={repair ? 'Edit repair request' : 'New repair request'}>
+      <form onSubmit={submitWith(form, save, onClose)}>
+        <Stack>
+          <TextInput label="What is broken" placeholder="Leaking kitchen tap" withAsterisk {...form.getInputProps('title')} />
+          <Textarea label="Details" placeholder="Since when, what you told the landlord" autosize minRows={2}
+            {...form.getInputProps('description')} />
+          <SimpleGrid cols={2}>
+            <TextInput label="Landlord told on" type="date" max={todayIso()} withAsterisk {...form.getInputProps('reported_on')} />
+            {repair && <Select label="Status" data={REPAIR_STATUSES} allowDeselect={false} {...form.getInputProps('status')} />}
+          </SimpleGrid>
+          {form.values.status === 'resolved' && (
+            <TextInput label="Fixed on" type="date" max={todayIso()} {...form.getInputProps('resolved_on')} />
+          )}
+          <FileInput label={repair?.photo_file ? 'Replace photo' : 'Photo'} description="JPG, PNG or WEBP up to 5 MB."
+            accept={IMAGE_ACCEPT} leftSection={<IconUpload size={16} />} clearable {...form.getInputProps('photo')} />
+        </Stack>
+        <ModalActions onClose={onClose} loading={save.isPending} label={repair ? 'Save' : 'Add'} />
+      </form>
+    </Modal>
+  )
+}

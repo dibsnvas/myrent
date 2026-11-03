@@ -14,6 +14,7 @@ import LoginPage from './pages/LoginPage'
 import NewHomePage from './pages/NewHomePage'
 import PaymentsPage from './pages/PaymentsPage'
 import RegisterPage from './pages/RegisterPage'
+import RepairsPage from './pages/RepairsPage'
 import UtilitiesPage from './pages/UtilitiesPage'
 
 function FullPageLoader() {
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="homes/:homeId/calendar" element={<CalendarPage />} />
         <Route path="homes/:homeId/condition" element={<ConditionPage />} />
         <Route path="homes/:homeId/condition/:stage" element={<ConditionPage />} />
+        <Route path="homes/:homeId/repairs" element={<RepairsPage />} />
         <Route path="homes/:homeId/documents" element={<Navigate to="../condition" relative="path" replace />} />
         <Route path="account" element={<AccountPage />} />
         <Route path="help" element={<HelpPage />} />

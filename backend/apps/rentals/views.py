@@ -23,7 +23,7 @@ from django.utils.crypto import constant_time_compare
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_GET
 
-from apps.rentals.models import Contract, Document, MeterReading, Payment, Property, Utility
+from apps.rentals.models import Contract, Document, MeterReading, Payment, Property, RepairRequest, Utility
 from apps.rentals.ownership import OwnedQuerysetMixin
 from apps.rentals.serializers import (
     ContractSerializer,
@@ -35,6 +35,7 @@ from apps.rentals.serializers import (
     PropertySerializer,
     ReminderSerializer,
     RenewContractSerializer,
+    RepairRequestSerializer,
     UtilitySerializer,
 )
 from apps.rentals.services.events import calendar_events, month_bounds, reminders_for
@@ -273,6 +274,19 @@ class DocumentViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
         queryset = super().get_queryset()
         kind = self.request.query_params.get('kind')
         return queryset.filter(kind=kind) if kind else queryset
+
+
+@extend_schema(parameters=[PROPERTY_PARAM, OpenApiParameter('status', str, enum=RepairRequest.Status.values)])
+class RepairRequestViewSet(OwnedQuerysetMixin, viewsets.ModelViewSet):
+    """Repair requests (US-12): what is broken, since when, and whether the landlord has fixed it."""
+
+    queryset = RepairRequest.objects.select_related('photo')
+    serializer_class = RepairRequestSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        repair_status = self.request.query_params.get('status')
+        return queryset.filter(status=repair_status) if repair_status else queryset
 
 
 class CalendarView(APIView):

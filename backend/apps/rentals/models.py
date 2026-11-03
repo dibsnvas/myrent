@@ -87,6 +87,7 @@ class Document(models.Model):
         RECEIPT = 'receipt', 'Receipt'
         CONDITION = 'condition', 'Condition photo'
         METER = 'meter', 'Meter photo'
+        REPAIR = 'repair', 'Repair photo'
         OTHER = 'other', 'Other'
 
     class Stage(models.TextChoices):
@@ -239,6 +240,35 @@ class MeterReading(models.Model):
 
     def __str__(self) -> str:
         return f'{self.utility} {self.value} on {self.reading_date:%d.%m.%Y}'
+
+
+class RepairRequest(models.Model):
+    """Something broken in the home that the landlord has to fix (US-12). Dates show how long it has been open."""
+
+    class Status(models.TextChoices):
+        OPEN = 'open', 'Open'
+        IN_PROGRESS = 'in_progress', 'In progress'
+        RESOLVED = 'resolved', 'Resolved'
+
+    property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='repairs')
+    title = models.CharField(max_length=TITLE_MAX_LENGTH)
+    description = models.TextField(blank=True)
+    photo = models.ForeignKey(Document, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    reported_on = models.DateField(default=timezone.localdate, help_text='When the landlord was told.')
+    status = models.CharField(max_length=CHOICE_MAX_LENGTH, choices=Status.choices, default=Status.OPEN)
+    resolved_on = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-reported_on', '-id')
+
+    def __str__(self) -> str:
+        return f'{self.title} · {self.get_status_display()}'
+
+    def days_open(self, today: date | None = None) -> int:
+        """Days from the report to the fix, or to today while it is not fixed."""
+        end = self.resolved_on or today or timezone.localdate()
+        return max((end - self.reported_on).days, 0)
 
 
 class ReminderLog(models.Model):

@@ -12,6 +12,7 @@ import {
   IconPhoto,
   IconPlus,
   IconSearch,
+  IconTool,
 } from '@tabler/icons-react'
 import { useEffect } from 'react'
 import { Link, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom'
@@ -30,6 +31,7 @@ const HOME_LINKS = [
   { path: '/utilities', label: 'Utilities and meters', icon: IconBolt },
   { path: '/calendar', label: 'Calendar and reminders', icon: IconCalendarEvent },
   { path: '/condition', label: 'Housing condition', icon: IconPhoto },
+  { path: '/repairs', label: 'Repair requests', icon: IconTool },
 ]
 
 function rememberedHome() {
