@@ -20,6 +20,8 @@ MAX_CONTRACT_MONTHS = 60
 # Reminders: how far ahead "due soon" looks, and when a lease end starts to show.
 REMINDER_DAYS_AHEAD = 3
 CONTRACT_END_WARNING_DAYS = 30
+# A repair request that is still not fixed after this many days shows up as a reminder.
+REPAIR_REMINDER_DAYS = 7
 
 # Uploads
 UPLOAD_MAX_PDF_BYTES = 10 * 1024 * 1024

@@ -7,7 +7,7 @@ from django.core import mail
 from django.test import override_settings
 from django.urls import reverse
 
-from apps.rentals.models import MeterReading, Payment, ReminderLog, Utility
+from apps.rentals.models import MeterReading, Payment, ReminderLog, RepairRequest, Utility
 from apps.rentals.services.events import reminders_for
 from apps.rentals.tests.base import RentalsTestCase
 
@@ -24,6 +24,19 @@ class ReminderTests(RentalsTestCase):
             ('overdue', date(2026, 9, 5)),
             ('soon', date(2026, 10, 3)),
         ])
+
+    def test_repair_not_fixed_for_a_week(self) -> None:
+        tap = RepairRequest.objects.create(property=self.home, title='Leaking tap', reported_on=date(2026, 9, 24))
+        RepairRequest.objects.create(property=self.home, title='Door handle', reported_on=date(2026, 9, 28))
+        RepairRequest.objects.create(
+            property=self.home, title='Lamp', reported_on=date(2026, 9, 1), status='resolved',
+            resolved_on=date(2026, 9, 3),
+        )
+        self.assertEqual([r.title for r in reminders_for(self.user, TODAY)], ['Leaking tap: not fixed for 7 days'])
+        tap.status = RepairRequest.Status.RESOLVED
+        tap.resolved_on = TODAY
+        tap.save()
+        self.assertEqual(reminders_for(self.user, TODAY), [])
 
     def test_meter_reminder_until_reading_recorded(self) -> None:
         self.home.meter_reading_day = 3

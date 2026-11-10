@@ -11,8 +11,8 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from apps.auths.models import User
-from apps.rentals.constants import CONTRACT_END_WARNING_DAYS, REMINDER_DAYS_AHEAD
-from apps.rentals.models import Contract, MeterReading, Payment, Property
+from apps.rentals.constants import CONTRACT_END_WARNING_DAYS, REMINDER_DAYS_AHEAD, REPAIR_REMINDER_DAYS
+from apps.rentals.models import Contract, MeterReading, Payment, Property, RepairRequest
 from apps.rentals.services.schedule import add_months
 
 
@@ -189,6 +189,25 @@ def _contract_reminders(properties: list[Property], today: date) -> list[Reminde
     return reminders
 
 
+def _repair_reminders(properties: list[Property], today: date) -> list[Reminder]:
+    """Repairs the landlord has known about for a week or more and that are still not fixed."""
+    repairs = RepairRequest.objects.filter(
+        property__in=properties,
+        reported_on__lte=today - timedelta(days=REPAIR_REMINDER_DAYS),
+    ).exclude(status=RepairRequest.Status.RESOLVED).select_related('property')
+    return [
+        Reminder(
+            key=f'repair:{repair.id}:open',  # emailed once; the banner keeps showing it until it is fixed
+            level='info',
+            date=repair.reported_on,
+            title=f'{repair.title}: not fixed for {repair.days_open(today)} days',
+            property_id=repair.property_id,
+            property_title=repair.property.title,
+        )
+        for repair in repairs
+    ]
+
+
 def reminders_for(user: User, today: date, property_id: int | None = None) -> list[Reminder]:
     properties = _properties(user, property_id)
     if not properties:
@@ -197,5 +216,6 @@ def reminders_for(user: User, today: date, property_id: int | None = None) -> li
         _payment_reminders(properties, today)
         + _meter_reminders(properties, today)
         + _contract_reminders(properties, today)
+        + _repair_reminders(properties, today)
     )
     return sorted(reminders, key=lambda reminder: (LEVEL_ORDER[reminder.level], reminder.date))

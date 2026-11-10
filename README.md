@@ -1,7 +1,8 @@
-# MyRent v1
+# MyRent
 
 Tenant-side rental management: one place for the lease, rent, utility bills, meter readings,
-move-in condition photos and reminders. Course project for IT Project Management (PjM 101), Fall 2026.
+move-in condition photos, repair requests and reminders.
+Course project for IT Project Management (PjM 101), Fall 2026.
 
 ```
 React (Vite) on Vercel  ->  Django + DRF API on Render  ->  Render Postgres (records + uploaded files)
@@ -24,8 +25,17 @@ Live: https://myrent-kbtu.vercel.app (frontend) · https://myrent-api-cjsp.onren
 | Calendar and reminders | Month calendar plus a reminders banner (overdue, due in 3 days, meter day, lease ending). Daily email digest |
 | Condition photo log | Housing gallery: Before (move-in) and After (move-out) photos per room and item, with notes. Location data stripped on upload |
 
-Not in v1 (Should/Could): contract amendments, maintenance issue log, monthly expense summary,
-AI contract assistant, landlord accounts.
+## Release 2 (Should stories, after the demo week)
+
+| Story | Where |
+|---|---|
+| US-11 Monthly expense summary | Payments page, "Housing cost per month": rent, each utility, other, paid and left for any month. API: `GET /api/properties/{id}/month-summary/?month=YYYY-MM` |
+| US-12 Repair requests | "Repair requests" page: what is broken, the date the landlord was told, photo, status (open / in progress / resolved) and days open. A request not fixed after 7 days becomes a reminder. API: `/api/repairs/` |
+
+Small changes after the freeze: reminders link to the page where you act on them; payment dates cannot be in
+the future; a meter reading cannot be lower than the previous one (it showed a negative consumption).
+
+Not done (Could / out of scope): contract amendments, AI contract assistant, landlord accounts.
 
 ## Project layout
 
@@ -120,8 +130,8 @@ Free-tier facts that shaped this setup:
 The UI follows the team's Figma file (MyRent, by Karina): Inter, the dusty-rose / creamy palette, a rounded
 sidebar and top bar, tiles with a corner arrow. Colours are CSS variables at the top of `frontend/src/styles.css`.
 The login background photo is not in the repo: put it at `frontend/public/login-bg.jpg` and it is used
-automatically (until then a sunset gradient is shown). Repair requests from the Figma are a Should story (R2)
-and are not built yet.
+automatically (until then a sunset gradient is shown). Repair requests from the Figma were built in
+Release 2 (US-12).
 
 ## Design decisions
 
@@ -131,8 +141,8 @@ and are not built yet.
 - **Reminders are calculated, not scheduled.** `services/events.py` works out what is overdue or due soon
   on every request, so there is no Celery, no Redis and no worker. The cron only emails the same list.
   `ReminderLog` makes sure each reminder is emailed once.
-- **One `Payment` table** for rent, utility bills and other costs. The calendar and a future monthly
-  summary are each one query.
+- **One `Payment` table** for rent, utility bills and other costs. The calendar and the monthly
+  summary (`services/summary.py`) are each one query.
 - **Renewal = new `Contract` row** pointing at the previous one. Paid history is never rewritten. Unpaid
   rent inside the new period moves to the new terms.
 - **One upload pipeline** (`services/uploads.py`):
